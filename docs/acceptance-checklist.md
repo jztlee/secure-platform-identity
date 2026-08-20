@@ -19,3 +19,16 @@ not just that a `.rego` file exists).
 - [ ] The Azure ADR maps every AWS control to a named Azure equivalent, with stub modules matching the interface.
 - [ ] Docs explain design decisions, security tradeoffs, and implemented vs. planned controls.
 - [ ] A CI secret-scan of Terraform plan/state output runs on every PR and blocks merge on a match.
+
+## Known tradeoffs to revisit
+
+- **`aws-dev-foundation`'s IAM policy widens read-only verbs to wildcards**
+  (`ec2:Describe*`, `logs:Describe*`, `iam:Get*`/`List*`) instead of
+  enumerating each one individually. Decided during Phase 3 networking work
+  to reduce the temp-credential debugging cycle — every gap hit that day
+  was a read-only verification action, never a mutating one, so the
+  create/delete/modify actions stayed explicitly scoped while reads went
+  broad. Revisit before calling this project interview-ready: either
+  enumerate the exact read actions actually used (auditable via CloudTrail
+  history), or explicitly document this as an accepted tradeoff with
+  reasoning in an ADR.

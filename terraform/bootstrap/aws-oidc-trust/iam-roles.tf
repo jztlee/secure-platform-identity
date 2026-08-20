@@ -43,20 +43,24 @@ data "aws_iam_policy_document" "aws_dev_foundation_networking" {
     sid    = "VpcNetworkingManagement"
     effect = "Allow"
     actions = [
-      "ec2:CreateVpc", "ec2:DeleteVpc", "ec2:DescribeVpcs", "ec2:ModifyVpcAttribute",
-      "ec2:CreateSubnet", "ec2:DeleteSubnet", "ec2:DescribeSubnets", "ec2:ModifySubnetAttribute",
-      "ec2:CreateInternetGateway", "ec2:DeleteInternetGateway", "ec2:AttachInternetGateway", "ec2:DetachInternetGateway", "ec2:DescribeInternetGateways",
-      "ec2:CreateNatGateway", "ec2:DeleteNatGateway", "ec2:DescribeNatGateways",
-      "ec2:AllocateAddress", "ec2:ReleaseAddress", "ec2:DescribeAddresses", "ec2:AssociateAddress", "ec2:DisassociateAddress",
-      "ec2:CreateRouteTable", "ec2:DeleteRouteTable", "ec2:CreateRoute", "ec2:DeleteRoute", "ec2:AssociateRouteTable", "ec2:DisassociateRouteTable", "ec2:DescribeRouteTables",
-      "ec2:CreateSecurityGroup", "ec2:DeleteSecurityGroup", "ec2:AuthorizeSecurityGroupIngress", "ec2:AuthorizeSecurityGroupEgress", "ec2:RevokeSecurityGroupIngress", "ec2:RevokeSecurityGroupEgress", "ec2:DescribeSecurityGroups",
-      "ec2:CreateVpcEndpoint", "ec2:DeleteVpcEndpoints", "ec2:DescribeVpcEndpoints", "ec2:ModifyVpcEndpoint",
-      "ec2:CreateFlowLogs", "ec2:DeleteFlowLogs", "ec2:DescribeFlowLogs",
-      "ec2:DescribeAvailabilityZones", "ec2:DescribeAccountAttributes",
-      "ec2:CreateTags", "ec2:DeleteTags", "ec2:DescribeTags", "ec2:DescribeVpcAttribute",
-      "ec2:DescribeAddressesAttribute",
-
+      "ec2:CreateVpc", "ec2:DeleteVpc", "ec2:ModifyVpcAttribute",
+      "ec2:CreateSubnet", "ec2:DeleteSubnet", "ec2:ModifySubnetAttribute",
+      "ec2:CreateInternetGateway", "ec2:DeleteInternetGateway", "ec2:AttachInternetGateway", "ec2:DetachInternetGateway",
+      "ec2:CreateNatGateway", "ec2:DeleteNatGateway",
+      "ec2:AllocateAddress", "ec2:ReleaseAddress", "ec2:AssociateAddress", "ec2:DisassociateAddress",
+      "ec2:CreateRouteTable", "ec2:DeleteRouteTable", "ec2:CreateRoute", "ec2:DeleteRoute", "ec2:AssociateRouteTable", "ec2:DisassociateRouteTable",
+      "ec2:CreateSecurityGroup", "ec2:DeleteSecurityGroup", "ec2:AuthorizeSecurityGroupIngress", "ec2:AuthorizeSecurityGroupEgress", "ec2:RevokeSecurityGroupIngress", "ec2:RevokeSecurityGroupEgress",
+      "ec2:CreateVpcEndpoint", "ec2:DeleteVpcEndpoints", "ec2:ModifyVpcEndpoint",
+      "ec2:CreateFlowLogs", "ec2:DeleteFlowLogs",
+      "ec2:CreateTags", "ec2:DeleteTags",
     ]
+    resources = ["*"]
+  }
+
+  statement {
+    sid       = "VpcNetworkingRead"
+    effect    = "Allow"
+    actions   = ["ec2:Describe*"]
     resources = ["*"]
   }
 
@@ -65,15 +69,15 @@ data "aws_iam_policy_document" "aws_dev_foundation_networking" {
     effect = "Allow"
     actions = [
       "logs:CreateLogGroup", "logs:DeleteLogGroup", "logs:PutRetentionPolicy",
-      "logs:TagResource", "logs:ListTagsForResource",
+      "logs:TagResource",
     ]
     resources = ["arn:aws:logs:us-east-1:${data.aws_caller_identity.current.account_id}:log-group:/aws/vpc-flow-logs/*"]
   }
 
   statement {
-    sid       = "FlowLogDescribe"
+    sid       = "FlowLogRead"
     effect    = "Allow"
-    actions   = ["logs:DescribeLogGroups"]
+    actions   = ["logs:Describe*", "logs:ListTagsForResource"]
     resources = ["*"]
   }
 
@@ -81,10 +85,16 @@ data "aws_iam_policy_document" "aws_dev_foundation_networking" {
     sid    = "FlowLogRole"
     effect = "Allow"
     actions = [
-      "iam:CreateRole", "iam:DeleteRole", "iam:GetRole", "iam:PutRolePolicy",
-      "iam:GetRolePolicy", "iam:DeleteRolePolicy", "iam:TagRole", "iam:PassRole", "iam:ListRolePolicies",
-      "iam:ListRoleTags", "iam:ListAttachedRolePolicies", "iam:ListInstanceProfilesForRole",
+      "iam:CreateRole", "iam:DeleteRole", "iam:PutRolePolicy", "iam:DeleteRolePolicy",
+      "iam:TagRole", "iam:PassRole",
     ]
+    resources = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/vpc-flow-logs-*"]
+  }
+
+  statement {
+    sid       = "FlowLogRoleRead"
+    effect    = "Allow"
+    actions   = ["iam:Get*", "iam:List*"]
     resources = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/vpc-flow-logs-*"]
   }
 }
