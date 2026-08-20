@@ -53,7 +53,9 @@ data "aws_iam_policy_document" "aws_dev_foundation_networking" {
       "ec2:CreateVpcEndpoint", "ec2:DeleteVpcEndpoints", "ec2:DescribeVpcEndpoints", "ec2:ModifyVpcEndpoint",
       "ec2:CreateFlowLogs", "ec2:DeleteFlowLogs", "ec2:DescribeFlowLogs",
       "ec2:DescribeAvailabilityZones", "ec2:DescribeAccountAttributes",
-      "ec2:CreateTags", "ec2:DeleteTags", "ec2:DescribeTags",
+      "ec2:CreateTags", "ec2:DeleteTags", "ec2:DescribeTags", "ec2:DescribeVpcAttribute",
+      "ec2:DescribeAddressesAttribute"
+    
     ]
     resources = ["*"]
     }
