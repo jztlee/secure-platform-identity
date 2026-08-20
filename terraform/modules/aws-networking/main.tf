@@ -129,3 +129,29 @@ resource "aws_route_table_association" "private_data" {
   subnet_id      = aws_subnet.private_data[count.index].id
   route_table_id = aws_route_table.private_data.id
 }
+
+resource "aws_security_group" "vpc_endpoints" {
+  name        = "${var.environment}-vpc-endpoints"
+  description = "Allows HTTPS from within the VPC to interface endpoints"
+  vpc_id      = aws_vpc.main.id
+
+  ingress {
+    description = "HTTPS from within the VPC"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = [var.vpc_cidr]
+  }
+
+  egress {
+    description = "Allow all outbound"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = merge(var.tags, {
+    Name = "${var.environment}-vpc-endpoints"
+  })
+}

@@ -51,11 +51,11 @@ resource "aws_iam_role_policy" "flow_logs_delivery" {
 }
 
 resource "aws_flow_log" "main" {
-  vpc_id                = aws_vpc.main.id
-  traffic_type           = "ALL"
-  log_destination_type   = "cloud-watch-logs"
-  log_destination        = aws_cloudwatch_log_group.vpc_flow_logs.arn
-  iam_role_arn            = aws_iam_role.flow_logs.arn
+  vpc_id               = aws_vpc.main.id
+  traffic_type         = "ALL"
+  log_destination_type = "cloud-watch-logs"
+  log_destination      = aws_cloudwatch_log_group.vpc_flow_logs.arn
+  iam_role_arn         = aws_iam_role.flow_logs.arn
 
   tags = merge(var.tags, {
     Name = "${var.environment}-vpc-flow-log"
