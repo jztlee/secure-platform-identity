@@ -23,3 +23,7 @@ spec §15 for delivery order).
 [`acceptance-checklist.md`](acceptance-checklist.md) tracks spec §16 as a
 literal checklist — updated at the end of each phase, not just at the end
 of the project.
+
+[`glossary.md`](glossary.md) is a running reference of terms and tools
+introduced along the way — updated at the end of each phase alongside the
+acceptance checklist.
