@@ -17,3 +17,7 @@ module "networking" {
     ManagedBy      = "terraform"
   }
 }
+
+module "security" {
+  source = "../../../modules/aws-security"
+}
