@@ -105,5 +105,32 @@ resource "aws_iam_role_policy" "aws_dev_foundation_networking" {
   policy = data.aws_iam_policy_document.aws_dev_foundation_networking.json
 }
 
+data "aws_iam_policy_document" "aws_dev_foundation_security" {
+  statement {
+    sid    = "S3AccountPublicAccessBlock"
+    effect = "Allow"
+    actions = [
+      "s3:PutAccountPublicAccessBlock",
+      "s3:GetAccountPublicAccessBlock",
+    ]
+    resources = ["*"]
+  }
+
+  statement {
+    sid    = "EbsEncryptionByDefault"
+    effect = "Allow"
+    actions = [
+      "ec2:GetEbsEncryptionByDefault",
+      "ec2:EnableEbsEncryptionByDefault",
+      "ec2:DisableEbsEncryptionByDefault",
+    ]
+    resources = ["*"]
+  }
+}
 
 
+resource "aws_iam_role_policy" "aws_dev_foundation_security" {
+  name   = "security"
+  role   = aws_iam_role.aws_dev_foundation.id
+  policy = data.aws_iam_policy_document.aws_dev_foundation_security.json
+}

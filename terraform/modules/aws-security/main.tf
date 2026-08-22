@@ -4,3 +4,7 @@ resource "aws_s3_account_public_access_block" "this" {
     ignore_public_acls      = true
     restrict_public_buckets = true
 }
+
+resource "aws_ebs_encryption_by_default" "this" {
+  enabled = true
+}
