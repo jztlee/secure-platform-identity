@@ -126,8 +126,17 @@ data "aws_iam_policy_document" "aws_dev_foundation_security" {
     ]
     resources = ["*"]
   }
-}
 
+  statement {
+    sid    = "InstanceMetadataDefaults"
+    effect = "Allow"
+    actions = [
+      "ec2:GetInstanceMetadataDefaults",
+      "ec2:ModifyInstanceMetadataDefaults",
+    ]
+    resources = ["*"]
+  }
+}
 
 resource "aws_iam_role_policy" "aws_dev_foundation_security" {
   name   = "security"

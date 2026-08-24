@@ -8,3 +8,7 @@ resource "aws_s3_account_public_access_block" "this" {
 resource "aws_ebs_encryption_by_default" "this" {
   enabled = true
 }
+
+resource "aws_ec2_instance_metadata_defaults" "this" {
+  http_tokens = "required"
+}
