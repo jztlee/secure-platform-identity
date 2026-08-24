@@ -27,3 +27,7 @@ of the project.
 [`glossary.md`](glossary.md) is a running reference of terms and tools
 introduced along the way — updated at the end of each phase alongside the
 acceptance checklist.
+
+[`study-guide.md`](study-guide.md) is a self-test Q&A covering what's been
+built and why — for review once the project is done, and for interview
+prep. Updated alongside the acceptance checklist and glossary.
