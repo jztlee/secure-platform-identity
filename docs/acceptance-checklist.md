@@ -32,3 +32,11 @@ not just that a `.rego` file exists).
   enumerate the exact read actions actually used (auditable via CloudTrail
   history), or explicitly document this as an accepted tradeoff with
   reasoning in an ADR.
+
+- **`aws-dev-foundation`'s IAM policy for the CloudTrail S3 bucket wildcards read
+  actions** (`s3:Get*`, `s3:List*`) scoped to that one bucket ARN, instead of
+  enumerating each read sub-action individually. Same reasoning as the
+  existing networking/IAM tradeoff above: the `aws_s3_bucket` resource reads
+  back many bucket sub-configurations (ACL, CORS, encryption, versioning,
+  etc.) during refresh, and each missing one cost a full plan/apply/debug
+  cycle. Scoped to the specific bucket ARN, not account-wide.
