@@ -284,6 +284,43 @@ data "aws_iam_policy_document" "aws_dev_foundation_security" {
     ]
     resources = ["*"]
   }
+
+    statement {
+    sid       = "GuardDutyServiceLinkedRole"
+    effect    = "Allow"
+    actions   = ["iam:CreateServiceLinkedRole"]
+    resources = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/aws-service-role/guardduty.amazonaws.com/AWSServiceRoleForAmazonGuardDuty"]
+
+    condition {
+      test     = "StringEquals"
+      variable = "iam:AWSServiceName"
+      values   = ["guardduty.amazonaws.com"]
+    }
+  }
+
+  statement {
+    sid    = "GuardDutyManagement"
+    effect = "Allow"
+    actions = [
+      "guardduty:CreateDetector",
+      "guardduty:DeleteDetector",
+      "guardduty:UpdateDetector",
+      "guardduty:TagResource",
+      "guardduty:UntagResource",
+    ]
+    resources = ["*"]
+  }
+
+  statement {
+    sid    = "GuardDutyRead"
+    effect = "Allow"
+    actions = [
+      "guardduty:GetDetector",
+      "guardduty:ListDetectors",
+      "guardduty:ListTagsForResource",
+    ]
+    resources = ["*"]
+  }
 }
 
 resource "aws_iam_role_policy" "aws_dev_foundation_security" {
