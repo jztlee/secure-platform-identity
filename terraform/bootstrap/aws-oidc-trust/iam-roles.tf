@@ -179,10 +179,7 @@ data "aws_iam_policy_document" "aws_dev_foundation_security" {
   statement {
     sid    = "CloudTrailBucketRead"
     effect = "Allow"
-    actions = [
-      "s3:GetBucketPolicy", "s3:GetEncryptionConfiguration", "s3:GetBucketVersioning",
-      "s3:GetBucketTagging", "s3:GetBucketPublicAccessBlock", "s3:GetBucketLocation", "s3:ListBucket",
-    ]
+    actions = ["s3:Get*", "s3:List*"]
     resources = ["arn:aws:s3:::cloudtrail-logs-${data.aws_caller_identity.current.account_id}"]
   }
 
@@ -207,6 +204,82 @@ data "aws_iam_policy_document" "aws_dev_foundation_security" {
     actions = [
       "cloudtrail:GetTrail", "cloudtrail:GetTrailStatus", "cloudtrail:DescribeTrails",
       "cloudtrail:ListTags", "cloudtrail:GetEventSelectors",
+    ]
+    resources = ["*"]
+  }
+
+    statement {
+    sid       = "ConfigServiceLinkedRoleCreate"
+    effect    = "Allow"
+    actions   = ["iam:CreateServiceLinkedRole"]
+    resources = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/aws-service-role/config.amazonaws.com/AWSServiceRoleForConfig"]
+
+    condition {
+      test     = "StringEquals"
+      variable = "iam:AWSServiceName"
+      values   = ["config.amazonaws.com"]
+    }
+  }
+
+  statement {
+    sid    = "ConfigServiceLinkedRoleManage"
+    effect = "Allow"
+    actions = [
+      "iam:GetRole",
+      "iam:DeleteServiceLinkedRole",
+      "iam:GetServiceLinkedRoleDeletionStatus",
+    ]
+    resources = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/aws-service-role/config.amazonaws.com/AWSServiceRoleForConfig"]
+  }
+
+  statement {
+    sid    = "ConfigBucketManagement"
+    effect = "Allow"
+    actions = [
+      "s3:CreateBucket",
+      "s3:DeleteBucket",
+      "s3:PutBucketPolicy",
+      "s3:DeleteBucketPolicy",
+      "s3:PutBucketPublicAccessBlock",
+      "s3:PutEncryptionConfiguration",
+      "s3:PutBucketVersioning",
+      "s3:PutBucketTagging",
+    ]
+    resources = ["arn:aws:s3:::aws-config-logs-${data.aws_caller_identity.current.account_id}"]
+  }
+
+  statement {
+    sid       = "ConfigBucketRead"
+    effect    = "Allow"
+    actions   = ["s3:Get*", "s3:List*"]
+    resources = ["arn:aws:s3:::aws-config-logs-${data.aws_caller_identity.current.account_id}"]
+  }
+
+  statement {
+    sid    = "ConfigRecorderManagement"
+    effect = "Allow"
+    actions = [
+      "config:PutConfigurationRecorder",
+      "config:DeleteConfigurationRecorder",
+      "config:StartConfigurationRecorder",
+      "config:StopConfigurationRecorder",
+      "config:PutDeliveryChannel",
+      "config:DeleteDeliveryChannel",
+      "config:TagResource",
+      "config:UntagResource",
+    ]
+    resources = ["*"]
+  }
+
+  statement {
+    sid    = "ConfigRecorderRead"
+    effect = "Allow"
+    actions = [
+      "config:DescribeConfigurationRecorders",
+      "config:DescribeConfigurationRecorderStatus",
+      "config:DescribeDeliveryChannels",
+      "config:DescribeDeliveryChannelStatus",
+      "config:ListTagsForResource",
     ]
     resources = ["*"]
   }
