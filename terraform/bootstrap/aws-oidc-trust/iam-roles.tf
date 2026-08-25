@@ -159,6 +159,57 @@ data "aws_iam_policy_document" "aws_dev_foundation_security" {
     ]
     resources = ["*"]
   }
+
+   statement {
+    sid    = "CloudTrailBucketManagement"
+    effect = "Allow"
+    actions = [
+      "s3:CreateBucket",
+      "s3:DeleteBucket",
+      "s3:PutBucketPolicy",
+      "s3:DeleteBucketPolicy",
+      "s3:PutBucketPublicAccessBlock",
+      "s3:PutEncryptionConfiguration",
+      "s3:PutBucketVersioning",
+      "s3:PutBucketTagging",
+    ]
+    resources = ["arn:aws:s3:::cloudtrail-logs-${data.aws_caller_identity.current.account_id}"]
+  }
+
+  statement {
+    sid    = "CloudTrailBucketRead"
+    effect = "Allow"
+    actions = [
+      "s3:GetBucketPolicy", "s3:GetEncryptionConfiguration", "s3:GetBucketVersioning",
+      "s3:GetBucketTagging", "s3:GetBucketPublicAccessBlock", "s3:GetBucketLocation", "s3:ListBucket",
+    ]
+    resources = ["arn:aws:s3:::cloudtrail-logs-${data.aws_caller_identity.current.account_id}"]
+  }
+
+  statement {
+    sid    = "CloudTrailManagement"
+    effect = "Allow"
+    actions = [
+      "cloudtrail:CreateTrail",
+      "cloudtrail:DeleteTrail",
+      "cloudtrail:UpdateTrail",
+      "cloudtrail:StartLogging",
+      "cloudtrail:StopLogging",
+      "cloudtrail:AddTags",
+      "cloudtrail:RemoveTags",
+    ]
+    resources = ["arn:aws:cloudtrail:us-east-1:${data.aws_caller_identity.current.account_id}:trail/dev-account-trail"]
+  }
+
+  statement {
+    sid    = "CloudTrailRead"
+    effect = "Allow"
+    actions = [
+      "cloudtrail:GetTrail", "cloudtrail:GetTrailStatus", "cloudtrail:DescribeTrails",
+      "cloudtrail:ListTags", "cloudtrail:GetEventSelectors",
+    ]
+    resources = ["*"]
+  }
 }
 
 resource "aws_iam_role_policy" "aws_dev_foundation_security" {

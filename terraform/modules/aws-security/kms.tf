@@ -11,6 +11,38 @@ data "aws_iam_policy_document" "environment_key" {
     actions   = ["kms:*"]
     resources = ["*"]
   }
+
+  statement {
+    sid    = "AllowCloudTrailToEncryptLogs"
+    effect = "Allow"
+
+    principals {
+      type        = "Service"
+      identifiers = ["cloudtrail.amazonaws.com"]
+    }
+
+    actions   = ["kms:GenerateDataKey*"]
+    resources = ["*"]
+
+    condition {
+      test     = "StringLike"
+      variable = "kms:EncryptionContext:aws:cloudtrail:arn"
+      values   = ["arn:aws:cloudtrail:*:${data.aws_caller_identity.current.account_id}:trail/*"]
+    }
+  }
+
+  statement {
+    sid    = "AllowCloudTrailToDescribeKey"
+    effect = "Allow"
+
+    principals {
+      type        = "Service"
+      identifiers = ["cloudtrail.amazonaws.com"]
+    }
+
+    actions   = ["kms:DescribeKey"]
+    resources = ["*"]
+  }
 }
 
 resource "aws_kms_key" "environment" {
@@ -27,7 +59,7 @@ resource "aws_kms_key" "environment" {
     Classification = "internal"
     ManagedBy      = "terraform"
   }
-}
+ }
 
 resource "aws_kms_alias" "environment" {
   name          = "alias/dev-environment"
