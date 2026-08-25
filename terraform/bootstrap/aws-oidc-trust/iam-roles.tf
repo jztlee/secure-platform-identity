@@ -228,6 +228,7 @@ data "aws_iam_policy_document" "aws_dev_foundation_security" {
       "iam:GetRole",
       "iam:DeleteServiceLinkedRole",
       "iam:GetServiceLinkedRoleDeletionStatus",
+      "iam:PassRole"
     ]
     resources = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/aws-service-role/config.amazonaws.com/AWSServiceRoleForConfig"]
   }
