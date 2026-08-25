@@ -182,6 +182,7 @@ data "aws_iam_policy_document" "aws_dev_foundation_security" {
     actions = [
       "s3:GetBucketPolicy", "s3:GetEncryptionConfiguration", "s3:GetBucketVersioning",
       "s3:GetBucketTagging", "s3:GetBucketPublicAccessBlock", "s3:GetBucketLocation", "s3:ListBucket",
+      "s3:GetBucketAcl"
     ]
     resources = ["arn:aws:s3:::cloudtrail-logs-${data.aws_caller_identity.current.account_id}"]
   }
