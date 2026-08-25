@@ -43,6 +43,38 @@ data "aws_iam_policy_document" "environment_key" {
     actions   = ["kms:DescribeKey"]
     resources = ["*"]
   }
+
+    statement {
+    sid    = "AllowConfigToEncryptLogs"
+    effect = "Allow"
+
+    principals {
+      type        = "Service"
+      identifiers = ["config.amazonaws.com"]
+    }
+
+    actions   = ["kms:GenerateDataKey*"]
+    resources = ["*"]
+
+    condition {
+      test     = "StringEquals"
+      variable = "aws:SourceAccount"
+      values   = [data.aws_caller_identity.current.account_id]
+    }
+  }
+
+  statement {
+    sid    = "AllowConfigToDescribeKey"
+    effect = "Allow"
+
+    principals {
+      type        = "Service"
+      identifiers = ["config.amazonaws.com"]
+    }
+
+    actions   = ["kms:DescribeKey"]
+    resources = ["*"]
+  }
 }
 
 resource "aws_kms_key" "environment" {
