@@ -361,17 +361,11 @@ data "aws_iam_policy_document" "aws_dev_foundation_security" {
     resources = ["*"]
   }
 
-    statement {
+  statement {
     sid       = "InspectorServiceLinkedRole"
     effect    = "Allow"
     actions   = ["iam:CreateServiceLinkedRole"]
-    resources = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/aws-service-role/inspector2.amazonaws.com/AWSServiceRoleForAmazonInspector2"]
-
-    condition {
-      test     = "StringEquals"
-      variable = "iam:AWSServiceName"
-      values   = ["inspector2.amazonaws.com"]
-    }
+    resources = ["*"]
   }
 
   statement {
@@ -389,6 +383,29 @@ data "aws_iam_policy_document" "aws_dev_foundation_security" {
     effect = "Allow"
     actions = [
       "inspector2:BatchGetAccountStatus",
+    ]
+    resources = ["*"]
+  }
+
+    statement {
+    sid    = "AccessAnalyzerManagement"
+    effect = "Allow"
+    actions = [
+      "access-analyzer:CreateAnalyzer",
+      "access-analyzer:DeleteAnalyzer",
+      "access-analyzer:TagResource",
+      "access-analyzer:UntagResource",
+    ]
+    resources = ["arn:aws:access-analyzer:us-east-1:${data.aws_caller_identity.current.account_id}:analyzer/dev-account-analyzer"]
+  }
+
+  statement {
+    sid    = "AccessAnalyzerRead"
+    effect = "Allow"
+    actions = [
+      "access-analyzer:GetAnalyzer",
+      "access-analyzer:ListAnalyzers",
+      "access-analyzer:ListTagsForResource",
     ]
     resources = ["*"]
   }
