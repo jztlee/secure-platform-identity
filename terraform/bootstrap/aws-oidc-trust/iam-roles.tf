@@ -365,7 +365,8 @@ data "aws_iam_policy_document" "aws_dev_foundation_security" {
     sid       = "InspectorServiceLinkedRole"
     effect    = "Allow"
     actions   = ["iam:CreateServiceLinkedRole"]
-    resources = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/aws-service-role/inspector2.amazonaws.com/AWSServiceRoleForAmazonInspector2"]
+    resources = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/aws-service-role/inspector2.amazonaws.com/*"]
+
 
     condition {
       test     = "StringEquals"
