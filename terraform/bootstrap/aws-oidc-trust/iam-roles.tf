@@ -321,6 +321,45 @@ data "aws_iam_policy_document" "aws_dev_foundation_security" {
     ]
     resources = ["*"]
   }
+
+  statement {
+    sid       = "SecurityHubServiceLinkedRole"
+    effect    = "Allow"
+    actions   = ["iam:CreateServiceLinkedRole"]
+    resources = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/aws-service-role/securityhub.amazonaws.com/AWSServiceRoleForSecurityHub"]
+
+    condition {
+      test     = "StringEquals"
+      variable = "iam:AWSServiceName"
+      values   = ["securityhub.amazonaws.com"]
+    }
+  }
+
+  statement {
+    sid    = "SecurityHubManagement"
+    effect = "Allow"
+    actions = [
+      "securityhub:EnableSecurityHub",
+      "securityhub:DisableSecurityHub",
+      "securityhub:UpdateSecurityHubConfiguration",
+      "securityhub:TagResource",
+      "securityhub:UntagResource",
+      "securityhub:BatchEnableStandards",
+      "securityhub:BatchDisableStandards",
+    ]
+    resources = ["*"]
+  }
+
+  statement {
+    sid    = "SecurityHubRead"
+    effect = "Allow"
+    actions = [
+      "securityhub:DescribeHub",
+      "securityhub:GetEnabledStandards",
+      "securityhub:ListTagsForResource",
+    ]
+    resources = ["*"]
+  }
 }
 
 resource "aws_iam_role_policy" "aws_dev_foundation_security" {
