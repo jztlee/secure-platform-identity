@@ -360,6 +360,38 @@ data "aws_iam_policy_document" "aws_dev_foundation_security" {
     ]
     resources = ["*"]
   }
+
+    statement {
+    sid       = "InspectorServiceLinkedRole"
+    effect    = "Allow"
+    actions   = ["iam:CreateServiceLinkedRole"]
+    resources = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/aws-service-role/inspector2.amazonaws.com/AWSServiceRoleForAmazonInspector2"]
+
+    condition {
+      test     = "StringEquals"
+      variable = "iam:AWSServiceName"
+      values   = ["inspector2.amazonaws.com"]
+    }
+  }
+
+  statement {
+    sid    = "InspectorManagement"
+    effect = "Allow"
+    actions = [
+      "inspector2:Enable",
+      "inspector2:Disable",
+    ]
+    resources = ["*"]
+  }
+
+  statement {
+    sid    = "InspectorRead"
+    effect = "Allow"
+    actions = [
+      "inspector2:BatchGetAccountStatus",
+    ]
+    resources = ["*"]
+  }
 }
 
 resource "aws_iam_role_policy" "aws_dev_foundation_security" {
