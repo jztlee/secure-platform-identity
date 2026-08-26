@@ -386,6 +386,29 @@ data "aws_iam_policy_document" "aws_dev_foundation_security" {
     ]
     resources = ["*"]
   }
+
+    statement {
+    sid    = "AccessAnalyzerManagement"
+    effect = "Allow"
+    actions = [
+      "access-analyzer:CreateAnalyzer",
+      "access-analyzer:DeleteAnalyzer",
+      "access-analyzer:TagResource",
+      "access-analyzer:UntagResource",
+    ]
+    resources = ["arn:aws:access-analyzer:us-east-1:${data.aws_caller_identity.current.account_id}:analyzer/dev-account-analyzer"]
+  }
+
+  statement {
+    sid    = "AccessAnalyzerRead"
+    effect = "Allow"
+    actions = [
+      "access-analyzer:GetAnalyzer",
+      "access-analyzer:ListAnalyzers",
+      "access-analyzer:ListTagsForResource",
+    ]
+    resources = ["*"]
+  }
 }
 
 resource "aws_iam_role_policy" "aws_dev_foundation_security" {
