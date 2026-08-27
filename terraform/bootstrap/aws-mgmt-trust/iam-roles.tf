@@ -71,6 +71,34 @@ data "aws_iam_policy_document" "aws_mgmt_scp_policy" {
     ]
     resources = ["*"]
   }
+
+    statement {
+    sid    = "IdentityCenterManagement"
+    effect = "Allow"
+    actions = [
+      "sso:ListInstances",
+      "sso:CreatePermissionSet",
+      "sso:DeletePermissionSet",
+      "sso:UpdatePermissionSet",
+      "sso:DescribePermissionSet",
+      "sso:TagResource",
+      "sso:UntagResource",
+      "sso:ListTagsForResource",
+      "sso:AttachManagedPolicyToPermissionSet",
+      "sso:DetachManagedPolicyFromPermissionSet",
+      "sso:ListManagedPoliciesInPermissionSet",
+      "sso:CreateAccountAssignment",
+      "sso:DeleteAccountAssignment",
+      "sso:DescribeAccountAssignmentCreationStatus",
+      "sso:DescribeAccountAssignmentDeletionStatus",
+      "sso:ListAccountAssignments",
+      "sso:ProvisionPermissionSet",
+      "identitystore:GetGroupId",
+      "identitystore:DescribeGroup",
+      "identitystore:ListGroups",
+    ]
+    resources = ["*"]
+  }
 }
 
 resource "aws_iam_role_policy" "aws_mgmt_scp" {
