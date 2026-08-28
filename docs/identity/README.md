@@ -44,6 +44,21 @@ behavior against until a second identity exists. Worth doing before
 calling the identity model demonstrably complete, not just structurally
 complete.
 
+**Verification status:** federation is built and independently verified
+through two separate sources, not just "Terraform said success." Okta's
+System Log shows genuine `user.authentication.sso` SUCCESS events for the
+SAML flow, and AWS CloudTrail independently confirms IAM Identity Center
+provisioned all four permission sets as real IAM roles in the dev account
+(`AWSReservedSSO_platform-admin_...`, etc.), matching exactly what
+Terraform applied. What's still pending is a single, unbroken browser
+session completing the full redirect into the AWS console — attempts hit
+`security.session.detect_client_roaming` (an ASN/IP change mid-session
+triggering Okta's session-hijacking protection) compounding into a
+client-side rate limit (`system.client.rate_limit.violation`), both
+confirmed directly in the System Log rather than assumed. Revisit with a
+single clean attempt, on one stable network, from a session with zero
+prior Okta state.
+
 ## Non-human identity (v1, built)
 
 | Principal | Auth method | Scope |
