@@ -72,7 +72,7 @@ data "aws_iam_policy_document" "aws_mgmt_scp_policy" {
     resources = ["*"]
   }
 
-    statement {
+  statement {
     sid    = "IdentityCenterManagement"
     effect = "Allow"
     actions = [
