@@ -69,6 +69,17 @@ integration is switched mid-setup, re-verify *every* field the new
 template introduces, not just the ones that carried over conceptually
 from the old one.
 
+**Periodic access review.** Quarterly review of the human-identity
+entitlement chain — Okta group membership, IAM Identity Center account
+assignments (checked for drift against those groups), and console
+sign-in history per permission set to flag assigned-but-unused access.
+Reviewer is the project operator; at solo scale there's no separation of
+duties on this, an accepted tradeoff rather than a hidden gap. Each
+review appends a dated entry (reviewer, findings, actions taken) to
+`docs/identity/access-reviews.md` rather than being merely asserted.
+Off-cycle review is also triggered by any group/permission-set change or
+offboarding, not just the quarterly cadence.
+
 ## Non-human identity (v1, built)
 
 | Principal | Auth method | Scope |
