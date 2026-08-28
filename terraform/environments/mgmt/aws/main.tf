@@ -8,3 +8,9 @@ module "scp" {
 
   dev_account_id = var.dev_account_id
 }
+
+module "identity_center" {
+  source = "../../../modules/aws-identity-center"
+
+  dev_account_id = var.dev_account_id
+}
