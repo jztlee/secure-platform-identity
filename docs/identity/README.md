@@ -44,20 +44,30 @@ behavior against until a second identity exists. Worth doing before
 calling the identity model demonstrably complete, not just structurally
 complete.
 
-**Verification status:** federation is built and independently verified
-through two separate sources, not just "Terraform said success." Okta's
-System Log shows genuine `user.authentication.sso` SUCCESS events for the
-SAML flow, and AWS CloudTrail independently confirms IAM Identity Center
-provisioned all four permission sets as real IAM roles in the dev account
-(`AWSReservedSSO_platform-admin_...`, etc.), matching exactly what
-Terraform applied. What's still pending is a single, unbroken browser
-session completing the full redirect into the AWS console — attempts hit
-`security.session.detect_client_roaming` (an ASN/IP change mid-session
-triggering Okta's session-hijacking protection) compounding into a
-client-side rate limit (`system.client.rate_limit.violation`), both
-confirmed directly in the System Log rather than assumed. Revisit with a
-single clean attempt, on one stable network, from a session with zero
-prior Okta state.
+**Verification status: confirmed working end-to-end.** Beyond Okta's
+System Log (`user.authentication.sso` SUCCESS) and AWS CloudTrail
+(confirming IAM Identity Center provisioned all four permission sets as
+real IAM roles in the dev account, matching Terraform exactly), a live
+browser session was confirmed reaching the AWS access portal and listing
+`secure-platform-dev` with the `platform-admin` role available to assume.
+
+**Debugging note, for anyone hitting the same wall:** getting here took a
+long troubleshooting pass through several real but ultimately secondary
+issues — an org-wide API rate-limit check (a red herring; those buckets
+showed zero violations), a genuine `system.client.rate_limit.violation`
+and a `security.session.detect_client_roaming` denial (both real events,
+likely triggered by repeatedly retrying a handshake that could never
+succeed), and a legitimate bug fix along the way (the `platform-admin`
+Okta user accidentally shared its email with the management account's AWS
+root user — fixed via a `+`-alias, same pattern as the dev account's root
+email). **The actual root cause** was that the official "AWS IAM Identity
+Center" catalog app's **Advanced Sign-on Settings** fields (AWS SSO ACS
+URL, AWS SSO issuer URL) were never populated after switching from the
+broken custom SAML app — a structural gap specific to that app template,
+not a rate limit or session issue at all. Worth remembering: when an app
+integration is switched mid-setup, re-verify *every* field the new
+template introduces, not just the ones that carried over conceptually
+from the old one.
 
 ## Non-human identity (v1, built)
 
