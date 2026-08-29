@@ -29,6 +29,19 @@ bigger risk is a trust-policy `sub` condition written too broadly (e.g.
 `workspace:*` instead of a specific workspace name), which would let an
 unrelated workspace assume a role it shouldn't.
 
+**Break-glass credentials (`break-glass-dev`).** Same risk shape as the
+bootstrap operator credentials above — a long-lived IAM access key that
+alone can do nothing (zero permissions beyond `sts:AssumeRole`, itself
+MFA-gated) until paired with a live MFA code. What's different: this
+credential's MFA factor is TOTP rather than a hardware key (see
+`docs/identity/README.md`'s "Known tradeoff"), and it's meant to sit
+dormant far longer between uses than `bootstrap-operator` — both raise
+the value of periodically confirming it still works and that its stored
+secret material hasn't drifted or leaked, the same reasoning the SCIM
+abuse section below applies to that token's rotation. Not yet on a
+review schedule; natural to fold into the periodic access review process
+once that cadence has real history behind it.
+
 ## Privilege escalation
 
 **IAM role self-modification (the reason bootstrap is separate from

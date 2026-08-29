@@ -40,3 +40,11 @@ not just that a `.rego` file exists).
   back many bucket sub-configurations (ACL, CORS, encryption, versioning,
   etc.) during refresh, and each missing one cost a full plan/apply/debug
   cycle. Scoped to the specific bucket ARN, not account-wide.
+
+- **`break-glass-dev`'s MFA factor is a TOTP authenticator app (Google
+  Authenticator), not a phishing-resistant hardware key** — every other
+  MFA-gated identity in this project (Okta SSO, `bootstrap-operator`) is
+  built around phishing-resistant MFA; this is the one exception, driven
+  by not having a spare hardware key on hand during Phase 3. Swap for a
+  dedicated FIDO2 security key before calling this project
+  interview-ready.

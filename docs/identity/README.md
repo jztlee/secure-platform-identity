@@ -80,6 +80,41 @@ review appends a dated entry (reviewer, findings, actions taken) to
 Off-cycle review is also triggered by any group/permission-set change or
 offboarding, not just the quarterly cadence.
 
+**Time-bounded emergency access (break-glass).** A native IAM path into
+`secure-platform-dev` that doesn't depend on Okta or IAM Identity Center
+being available — deliberately independent, since an IdP outage or
+compromise is exactly the scenario this exists for. `break-glass-dev` is
+a native IAM user (created out-of-band, like `bootstrap-operator`, not
+in Terraform) with no permissions of its own beyond assuming one role,
+`break-glass-admin`. That role carries `AdministratorAccess` and a
+`max_session_duration` of 3600 seconds — AWS enforces this cap directly,
+not just by policy convention: verified 2026-08-28 by requesting a
+12-hour session and getting an outright rejection
+(`ValidationError: ... DurationSeconds exceeds the MaxSessionDuration`),
+then confirming a normal request succeeds with an expiration ~1 hour out
+and genuinely grants `AdministratorAccess` (checked via `iam:ListUsers`).
+The role's trust policy requires `aws:MultiFactorAuthPresent: true`; the
+user's own identity policy separately requires it too and is scoped to
+`sts:AssumeRole` on that one role ARN only.
+
+**Known tradeoff:** MFA for `break-glass-dev` is a TOTP code (Google
+Authenticator) rather than a phishing-resistant hardware key — the one
+place in this project's identity model that doesn't meet the
+phishing-resistant-only bar set for Okta (see above). Accepted for Phase
+3 given not having spare hardware on hand; tracked in
+`docs/acceptance-checklist.md` → "Known tradeoffs to revisit" as
+something to swap for a dedicated FIDO2 key before this project is
+interview-ready.
+
+**Mechanism built and tested; formal runbook still pending.** The
+assume-role path has been exercised end-to-end, as described above. The
+documented, rehearsed incident procedure for "IdP unavailable"
+(`docs/runbooks/`'s eventual `unavailable-idp.md`) is deliberately
+deferred to Phase 9, alongside the failure testing that validates every
+runbook. What exists now is a working mechanism; what's still missing is
+a tested walkthrough of using it under realistic incident conditions,
+not just a clean terminal.
+
 ## Non-human identity (v1, built)
 
 | Principal | Auth method | Scope |
