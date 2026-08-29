@@ -21,3 +21,19 @@ module "networking" {
 module "security" {
   source = "../../../modules/aws-security"
 }
+
+module "eks" {
+  source = "../../../modules/aws-eks"
+
+  vpc_id                  = module.networking.vpc_id
+  private_app_subnet_ids  = module.networking.private_app_subnet_ids
+  allowed_cidrs           = ["107.200.54.103/32"]
+
+  tags = {
+    Owner          = "platform-team"
+    Environment    = "dev"
+    CostCenter     = "platform-eng"
+    Classification = "internal"
+    ManagedBy      = "terraform"
+  }
+}

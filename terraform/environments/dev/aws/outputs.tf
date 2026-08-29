@@ -7,3 +7,13 @@ output "private_app_subnet_ids" {
   description = "Private app subnet IDs — EKS node groups will use these in Phase 4."
   value       = module.networking.private_app_subnet_ids
 }
+
+output "eks_cluster_name" {
+  description = "Name of the dev EKS cluster."
+  value       = module.eks.cluster_name
+}
+
+output "eks_cluster_endpoint" {
+  description = "API server endpoint for the dev EKS cluster."
+  value       = module.eks.cluster_endpoint
+}
