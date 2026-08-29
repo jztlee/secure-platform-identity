@@ -103,11 +103,15 @@ task once the project has a place for scheduled operational hygiene.
 *existence and membership* from Okta into Identity Center; it does not,
 by itself, guarantee a user is *authorized* to sign in anywhere — that
 still requires the group to be explicitly assigned to the SAML app.
-Misconfiguring this (assigning the wrong group, or forgetting to assign
-any group) would either lock out legitimate users or, worse, leave a
-default/broad group assigned unintentionally. Currently mitigated by
-having exactly one group (`platform-admin`) assigned, matching one
-provisioned user.
+**This was found to be a real, not just theoretical, gap:** as of
+2026-08-29, `developer`, `security-auditor`, and `read-only` were all
+actively syncing via Push Groups while none of them were assigned to the
+AWS IAM Identity Center app — meaning three of four permission sets were
+completely unreachable via SSO despite appearing fully configured on the
+AWS side. Found and fixed while provisioning a second test identity into
+`developer` (see `docs/identity/README.md`). Serves as a concrete
+reminder that "provisioned in Terraform" and "usable" are different
+claims, and the gap between them doesn't announce itself.
 
 ## Terraform state / secret exposure
 

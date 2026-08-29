@@ -36,13 +36,23 @@ corresponding IAM Identity Center access via the same SCIM channel
 ("Deactivate Users" provisioning action) — no manual AWS-side cleanup
 step.
 
-**Known gap:** only one human (the project operator) is provisioned today,
-in `platform-admin`. The `developer`, `security-auditor`, and `read-only`
-groups exist and have working permission sets, but no user has been
-assigned to them yet — there's nothing to test group-level least-privilege
-behavior against until a second identity exists. Worth doing before
-calling the identity model demonstrably complete, not just structurally
-complete.
+**Verified group-level least privilege (2026-08-29).** A second identity
+(`hello+dev-test@velteca.com`, a `+`-alias rather than a new mailbox) was
+provisioned into Okta and assigned to the `developer` group to test
+whether `developer`/`security-auditor`/`read-only` actually enforce
+narrower access, not just declare it. This surfaced a real gap: Push
+Groups (SCIM) was actively syncing all four groups' existence and
+membership into Identity Center, but only `platform-admin` was assigned
+to the AWS IAM Identity Center *application* in Okta — `developer`,
+`security-auditor`, and `read-only` were synced but structurally unable
+to sign in at all, exactly the risk the threat model's "Push-Groups vs.
+individual assignment" entry predicted without ever having confirmed it
+either way. Fixed by adding all three missing groups to the app's
+Assignments tab. Re-tested afterward: the test identity signed in via SSO
+under `developer`, landed in `secure-platform-dev`, and a subsequent
+`iam:ListUsers` call was denied (`no identity-based policy allows the
+action`) — confirming `PowerUserAccess` genuinely excludes IAM management,
+not just on paper.
 
 **Verification status: confirmed working end-to-end.** Beyond Okta's
 System Log (`user.authentication.sso` SUCCESS) and AWS CloudTrail
