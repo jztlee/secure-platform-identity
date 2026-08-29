@@ -416,3 +416,73 @@ resource "aws_iam_role_policy" "aws_dev_foundation_security" {
   role   = aws_iam_role.aws_dev_foundation.id
   policy = data.aws_iam_policy_document.aws_dev_foundation_security.json
 }
+
+data "aws_iam_policy_document" "aws_dev_foundation_eks" {
+  statement {
+    sid    = "EksRoleManagement"
+    effect = "Allow"
+    actions = [
+      "iam:CreateRole", "iam:DeleteRole", "iam:UpdateRole",
+      "iam:TagRole", "iam:UntagRole",
+      "iam:AttachRolePolicy", "iam:DetachRolePolicy",
+    ]
+    resources = [
+      "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/eks-dev-cluster",
+      "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/eks-dev-node-group",
+    ]
+  }
+
+  statement {
+    sid    = "EksRoleRead"
+    effect = "Allow"
+    actions = [
+      "iam:GetRole", "iam:ListRoleTags",
+      "iam:ListAttachedRolePolicies", "iam:ListRolePolicies",
+    ]
+    resources = [
+      "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/eks-dev-cluster",
+      "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/eks-dev-node-group",
+    ]
+  }
+
+  statement {
+    sid       = "EksRolePassRole"
+    effect    = "Allow"
+    actions   = ["iam:PassRole"]
+    resources = [
+      "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/eks-dev-cluster",
+      "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/eks-dev-node-group",
+    ]
+  }
+
+  statement {
+    sid    = "EksClusterManagement"
+    effect = "Allow"
+    actions = [
+      "eks:CreateCluster", "eks:DeleteCluster",
+      "eks:UpdateClusterConfig", "eks:UpdateClusterVersion",
+      "eks:CreateNodegroup", "eks:DeleteNodegroup",
+      "eks:UpdateNodegroupConfig", "eks:UpdateNodegroupVersion",
+      "eks:CreateAddon", "eks:DeleteAddon", "eks:UpdateAddon",
+      "eks:TagResource", "eks:UntagResource",
+    ]
+    resources = ["*"]
+  }
+
+  statement {
+    sid    = "EksRead"
+    effect = "Allow"
+    actions = [
+      "eks:DescribeCluster", "eks:DescribeNodegroup", "eks:DescribeAddon",
+      "eks:DescribeUpdate", "eks:ListClusters", "eks:ListNodegroups",
+      "eks:ListAddons", "eks:ListTagsForResource",
+    ]
+    resources = ["*"]
+  }
+}
+
+resource "aws_iam_role_policy" "aws_dev_foundation_eks" {
+  name   = "eks"
+  role   = aws_iam_role.aws_dev_foundation.id
+  policy = data.aws_iam_policy_document.aws_dev_foundation_eks.json
+}
