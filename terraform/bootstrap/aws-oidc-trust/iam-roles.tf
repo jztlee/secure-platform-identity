@@ -501,7 +501,7 @@ statement {
     "iam:DeleteServiceLinkedRole",
     "iam:GetServiceLinkedRoleDeletionStatus",
   ]
-  resources = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/aws-service-role/eks-nodegroup.amazonaws.com/AWSServiceRoleForAmazonEKSNodegroup"]
+  resources = ["*"]
   }
 }
 
