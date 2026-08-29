@@ -479,6 +479,30 @@ data "aws_iam_policy_document" "aws_dev_foundation_eks" {
     ]
     resources = ["*"]
   }
+
+  statement {
+  sid       = "EksNodegroupServiceLinkedRoleCreate"
+  effect    = "Allow"
+  actions   = ["iam:CreateServiceLinkedRole"]
+  resources = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/aws-service-role/eks-nodegroup.amazonaws.com/AWSServiceRoleForAmazonEKSNodegroup"]
+
+  condition {
+    test     = "StringEquals"
+    variable = "iam:AWSServiceName"
+    values   = ["eks-nodegroup.amazonaws.com"]
+  }
+}
+
+statement {
+  sid    = "EksNodegroupServiceLinkedRoleManage"
+  effect = "Allow"
+  actions = [
+    "iam:GetRole",
+    "iam:DeleteServiceLinkedRole",
+    "iam:GetServiceLinkedRoleDeletionStatus",
+  ]
+  resources = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/aws-service-role/eks-nodegroup.amazonaws.com/AWSServiceRoleForAmazonEKSNodegroup"]
+  }
 }
 
 resource "aws_iam_role_policy" "aws_dev_foundation_eks" {
