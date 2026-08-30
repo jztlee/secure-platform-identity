@@ -36,4 +36,5 @@ module "eks" {
     Classification = "internal"
     ManagedBy      = "terraform"
   }
+    cluster_admin_principal_arns = ["arn:aws:iam::133857166442:role/aws-reserved/sso.amazonaws.com/AWSReservedSSO_platform-admin_1a1ea017b1e815a6"]
 }

@@ -17,3 +17,8 @@ variable "allowed_cidrs" {
   description = "CIDR blocks allowed to reach the EKS API endpoint."
   type        = list(string)
 }
+
+variable "cluster_admin_principal_arns" {
+  description = "IAM principal ARNs granted cluster-admin access via EKS access entries."
+  type        = list(string)
+}
