@@ -38,3 +38,18 @@ module "eks" {
   }
     cluster_admin_principal_arns = ["arn:aws:iam::133857166442:role/aws-reserved/sso.amazonaws.com/AWSReservedSSO_platform-admin_1a1ea017b1e815a6"]
 }
+
+module "ecr" {
+  source = "../../../modules/aws-ecr"
+
+  repository_name = "platform-api"
+  kms_key_arn     = module.security.environment_kms_key_arn
+
+  tags = {
+    Owner          = "platform-team"
+    Environment    = "dev"
+    CostCenter     = "platform-eng"
+    Classification = "internal"
+    ManagedBy      = "terraform"
+  }
+}
