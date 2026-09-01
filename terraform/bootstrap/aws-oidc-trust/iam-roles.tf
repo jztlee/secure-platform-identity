@@ -464,7 +464,9 @@ data "aws_iam_policy_document" "aws_dev_foundation_eks" {
       "eks:CreateNodegroup", "eks:DeleteNodegroup",
       "eks:UpdateNodegroupConfig", "eks:UpdateNodegroupVersion",
       "eks:CreateAddon", "eks:DeleteAddon", "eks:UpdateAddon",
-      "eks:TagResource", "eks:UntagResource",
+      "eks:TagResource", "eks:UntagResource", "eks:CreateAccessEntry", 
+      "eks:DeleteAccessEntry", "eks:UpdateAccessEntry",
+      "eks:AssociateAccessPolicy", "eks:DisassociateAccessPolicy",
     ]
     resources = ["*"]
   }
@@ -475,7 +477,8 @@ data "aws_iam_policy_document" "aws_dev_foundation_eks" {
     actions = [
       "eks:DescribeCluster", "eks:DescribeNodegroup", "eks:DescribeAddon",
       "eks:DescribeUpdate", "eks:ListClusters", "eks:ListNodegroups",
-      "eks:ListAddons", "eks:ListTagsForResource",
+      "eks:ListAddons", "eks:ListTagsForResource", "eks:DescribeAccessEntry", 
+      "eks:ListAccessEntries", "eks:ListAssociatedAccessPolicies",
     ]
     resources = ["*"]
   }
@@ -509,4 +512,32 @@ resource "aws_iam_role_policy" "aws_dev_foundation_eks" {
   name   = "eks"
   role   = aws_iam_role.aws_dev_foundation.id
   policy = data.aws_iam_policy_document.aws_dev_foundation_eks.json
+}
+
+data "aws_iam_policy_document" "aws_dev_foundation_ecr" {
+  statement {
+    sid    = "EcrRepositoryManagement"
+    effect = "Allow"
+    actions = [
+      "ecr:CreateRepository", "ecr:DeleteRepository",
+      "ecr:PutImageTagMutability", "ecr:PutImageScanningConfiguration",
+      "ecr:TagResource", "ecr:UntagResource",
+    ]
+    resources = ["arn:aws:ecr:us-east-1:${data.aws_caller_identity.current.account_id}:repository/platform-api"]
+  }
+
+  statement {
+    sid    = "EcrRepositoryRead"
+    effect = "Allow"
+    actions = [
+      "ecr:DescribeRepositories", "ecr:DescribeImages", "ecr:ListTagsForResource",
+    ]
+    resources = ["arn:aws:ecr:us-east-1:${data.aws_caller_identity.current.account_id}:repository/platform-api"]
+  }
+}
+
+resource "aws_iam_role_policy" "aws_dev_foundation_ecr" {
+  name   = "ecr"
+  role   = aws_iam_role.aws_dev_foundation.id
+  policy = data.aws_iam_policy_document.aws_dev_foundation_ecr.json
 }
