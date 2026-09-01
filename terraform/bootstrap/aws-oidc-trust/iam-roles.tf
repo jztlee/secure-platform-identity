@@ -156,6 +156,8 @@ data "aws_iam_policy_document" "aws_dev_foundation_security" {
       "kms:DeleteAlias",
       "kms:UpdateAlias",
       "kms:ListAliases",
+      "kms:CreateGrant",
+      "kms:RevokeGrant",
     ]
     resources = ["*"]
   }
