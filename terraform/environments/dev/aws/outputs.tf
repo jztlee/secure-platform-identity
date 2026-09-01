@@ -17,3 +17,8 @@ output "eks_cluster_endpoint" {
   description = "API server endpoint for the dev EKS cluster."
   value       = module.eks.cluster_endpoint
 }
+
+output "ecr_repository_url" {
+  description = "ECR repository URL for the platform-api image."
+  value       = module.ecr.repository_url
+}
