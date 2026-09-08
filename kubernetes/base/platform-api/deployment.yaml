@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: platform-api
-          image: 133857166442.dkr.ecr.us-east-1.amazonaws.com/platform-api@sha256:ef82fafab24d2f1d8537f8c368bf2d773beb3811abc275a5f312fd7236994a2c
+          image: 133857166442.dkr.ecr.us-east-1.amazonaws.com/platform-api@sha256:ede973994349577a4c5c95463c266bfe64babaf3205c1244477671ea88f67873
           ports:
             - containerPort: 8080
           securityContext:
