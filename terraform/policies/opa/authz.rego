@@ -4,17 +4,17 @@ default allow = false
 
 allow if {
 	input.action == "read"
-	role_matches(input.subject, "read-only")
+	role_matches(input.subject_id, "read-only")
 }
 
 allow if {
 	input.action == "read"
-	role_matches(input.subject, "developer")
+	role_matches(input.subject_id, "developer")
 }
 
 allow if {
 	input.action in ["read", "write"]
-	role_matches(input.subject, "admin")
+	role_matches(input.subject_id, "admin")
 }
 
 role_matches(subject, role) if {
