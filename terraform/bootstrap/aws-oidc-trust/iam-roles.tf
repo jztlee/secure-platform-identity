@@ -516,6 +516,107 @@ resource "aws_iam_role_policy" "aws_dev_foundation_eks" {
   policy = data.aws_iam_policy_document.aws_dev_foundation_eks.json
 }
 
+data "aws_iam_policy_document" "aws_dev_foundation_eks_pod_identity" {
+  statement {
+    sid    = "KyvernoEcrReadRoleManagement"
+    effect = "Allow"
+    actions = [
+      "iam:CreateRole", "iam:DeleteRole", "iam:UpdateRole",
+      "iam:TagRole", "iam:UntagRole",
+      "iam:PutRolePolicy", "iam:DeleteRolePolicy",
+    ]
+    resources = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/kyverno-ecr-read"]
+  }
+
+  statement {
+    sid    = "KyvernoEcrReadRoleRead"
+    effect = "Allow"
+    actions = [
+      "iam:GetRole", "iam:GetRolePolicy", "iam:ListRoleTags",
+      "iam:ListAttachedRolePolicies", "iam:ListRolePolicies",
+    ]
+    resources = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/kyverno-ecr-read"]
+  }
+
+  statement {
+    sid     = "KyvernoEcrReadRolePassRole"
+    effect  = "Allow"
+    actions = ["iam:PassRole"]
+    resources = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/kyverno-ecr-read"]
+  }
+
+  statement {
+    sid    = "PodIdentityManagement"
+    effect = "Allow"
+    actions = [
+      "eks:CreatePodIdentityAssociation", "eks:UpdatePodIdentityAssociation",
+      "eks:DeletePodIdentityAssociation",
+    ]
+    resources = ["*"]
+  }
+
+  statement {
+    sid    = "PodIdentityRead"
+    effect = "Allow"
+    actions = [
+      "eks:DescribePodIdentityAssociation", "eks:ListPodIdentityAssociations",
+    ]
+    resources = ["*"]
+  }
+}
+
+resource "aws_iam_policy" "aws_dev_foundation_eks_pod_identity" {
+  name   = "aws-dev-foundation-eks-pod-identity"
+  policy = data.aws_iam_policy_document.aws_dev_foundation_eks_pod_identity.json
+
+  tags = {
+    Owner          = "platform-team"
+    Environment    = "dev"
+    CostCenter     = "platform-eng"
+    Classification = "internal"
+    ManagedBy      = "terraform"
+  }
+}
+
+resource "aws_iam_role_policy_attachment" "aws_dev_foundation_eks_pod_identity" {
+  role       = aws_iam_role.aws_dev_foundation.name
+  policy_arn = aws_iam_policy.aws_dev_foundation_eks_pod_identity.arn
+}
+
+data "aws_iam_policy_document" "aws_dev_foundation_managed_policies" {
+  statement {
+    sid    = "ManagedPolicyManagement"
+    effect = "Allow"
+    actions = [
+      "iam:CreatePolicy", "iam:DeletePolicy",
+      "iam:CreatePolicyVersion", "iam:DeletePolicyVersion",
+      "iam:TagPolicy", "iam:UntagPolicy",
+    ]
+    resources = [
+      "arn:aws:iam::${data.aws_caller_identity.current.account_id}:policy/aws-dev-foundation-eks-pod-identity",
+      "arn:aws:iam::${data.aws_caller_identity.current.account_id}:policy/aws-dev-foundation-ecr",
+    ]
+  }
+
+  statement {
+    sid    = "ManagedPolicyRead"
+    effect = "Allow"
+    actions = [
+      "iam:GetPolicy", "iam:GetPolicyVersion", "iam:ListPolicyVersions", "iam:ListPolicyTags",
+    ]
+    resources = [
+      "arn:aws:iam::${data.aws_caller_identity.current.account_id}:policy/aws-dev-foundation-eks-pod-identity",
+      "arn:aws:iam::${data.aws_caller_identity.current.account_id}:policy/aws-dev-foundation-ecr",
+    ]
+  }
+}
+
+resource "aws_iam_role_policy" "aws_dev_foundation_managed_policies" {
+  name   = "managed-policies"
+  role   = aws_iam_role.aws_dev_foundation.id
+  policy = data.aws_iam_policy_document.aws_dev_foundation_managed_policies.json
+}
+
 data "aws_iam_policy_document" "aws_dev_foundation_ecr" {
   statement {
     sid    = "EcrRepositoryManagement"
@@ -538,8 +639,20 @@ data "aws_iam_policy_document" "aws_dev_foundation_ecr" {
   }
 }
 
-resource "aws_iam_role_policy" "aws_dev_foundation_ecr" {
-  name   = "ecr"
-  role   = aws_iam_role.aws_dev_foundation.id
+resource "aws_iam_policy" "aws_dev_foundation_ecr" {
+  name   = "aws-dev-foundation-ecr"
   policy = data.aws_iam_policy_document.aws_dev_foundation_ecr.json
+
+  tags = {
+    Owner          = "platform-team"
+    Environment    = "dev"
+    CostCenter     = "platform-eng"
+    Classification = "internal"
+    ManagedBy      = "terraform"
+  }
+}
+
+resource "aws_iam_role_policy_attachment" "aws_dev_foundation_ecr" {
+  role       = aws_iam_role.aws_dev_foundation.name
+  policy_arn = aws_iam_policy.aws_dev_foundation_ecr.arn
 }
