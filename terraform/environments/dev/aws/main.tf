@@ -25,9 +25,9 @@ module "security" {
 module "eks" {
   source = "../../../modules/aws-eks"
 
-  vpc_id                  = module.networking.vpc_id
-  private_app_subnet_ids  = module.networking.private_app_subnet_ids
-  allowed_cidrs           = ["71.187.42.88/32"]
+  vpc_id                 = module.networking.vpc_id
+  private_app_subnet_ids = module.networking.private_app_subnet_ids
+  allowed_cidrs          = ["71.187.42.88/32"]
 
   tags = {
     Owner          = "platform-team"
@@ -36,7 +36,7 @@ module "eks" {
     Classification = "internal"
     ManagedBy      = "terraform"
   }
-    cluster_admin_principal_arns = ["arn:aws:iam::133857166442:role/aws-reserved/sso.amazonaws.com/AWSReservedSSO_platform-admin_1a1ea017b1e815a6"]
+  cluster_admin_principal_arns = ["arn:aws:iam::133857166442:role/aws-reserved/sso.amazonaws.com/AWSReservedSSO_platform-admin_1a1ea017b1e815a6"]
 }
 
 module "ecr" {

@@ -1,8 +1,8 @@
 data "aws_iam_policy_document" "deny_unencrypted_resources" {
   statement {
-    sid    = "DenyUnencryptedEBSVolumes"
-    effect = "Deny"
-    actions = ["ec2:CreateVolume"]
+    sid       = "DenyUnencryptedEBSVolumes"
+    effect    = "Deny"
+    actions   = ["ec2:CreateVolume"]
     resources = ["*"]
 
     condition {
@@ -13,9 +13,9 @@ data "aws_iam_policy_document" "deny_unencrypted_resources" {
   }
 
   statement {
-    sid    = "DenyUnencryptedS3Uploads"
-    effect = "Deny"
-    actions = ["s3:PutObject"]
+    sid       = "DenyUnencryptedS3Uploads"
+    effect    = "Deny"
+    actions   = ["s3:PutObject"]
     resources = ["*"]
 
     condition {
@@ -26,9 +26,9 @@ data "aws_iam_policy_document" "deny_unencrypted_resources" {
   }
 
   statement {
-    sid    = "DenyUnencryptedRDSInstances"
-    effect = "Deny"
-    actions = ["rds:CreateDBInstance", "rds:CreateDBCluster"]
+    sid       = "DenyUnencryptedRDSInstances"
+    effect    = "Deny"
+    actions   = ["rds:CreateDBInstance", "rds:CreateDBCluster"]
     resources = ["*"]
 
     condition {

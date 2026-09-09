@@ -1,24 +1,24 @@
 locals {
   permission_sets = {
     platform-admin = {
-      description         = "Full platform administration - Terraform, AWS, cluster admin"
-      managed_policy_arn  = "arn:aws:iam::aws:policy/AdministratorAccess"
-      session_duration    = "PT4H"
+      description        = "Full platform administration - Terraform, AWS, cluster admin"
+      managed_policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess"
+      session_duration   = "PT4H"
     }
     developer = {
-      description         = "Broad application-development access, short of IAM/org management"
-      managed_policy_arn  = "arn:aws:iam::aws:policy/PowerUserAccess"
-      session_duration    = "PT8H"
+      description        = "Broad application-development access, short of IAM/org management"
+      managed_policy_arn = "arn:aws:iam::aws:policy/PowerUserAccess"
+      session_duration   = "PT8H"
     }
     security-auditor = {
-      description         = "Read-only access scoped for security auditing"
-      managed_policy_arn  = "arn:aws:iam::aws:policy/SecurityAudit"
-      session_duration    = "PT8H"
+      description        = "Read-only access scoped for security auditing"
+      managed_policy_arn = "arn:aws:iam::aws:policy/SecurityAudit"
+      session_duration   = "PT8H"
     }
     read-only = {
-      description         = "General read-only access across the account"
-      managed_policy_arn  = "arn:aws:iam::aws:policy/ReadOnlyAccess"
-      session_duration    = "PT8H"
+      description        = "General read-only access across the account"
+      managed_policy_arn = "arn:aws:iam::aws:policy/ReadOnlyAccess"
+      session_duration   = "PT8H"
     }
   }
 }

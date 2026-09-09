@@ -137,7 +137,7 @@ data "aws_iam_policy_document" "aws_dev_foundation_security" {
     resources = ["*"]
   }
 
-    statement {
+  statement {
     sid    = "EnvironmentKmsKey"
     effect = "Allow"
     actions = [
@@ -162,7 +162,7 @@ data "aws_iam_policy_document" "aws_dev_foundation_security" {
     resources = ["*"]
   }
 
-   statement {
+  statement {
     sid    = "CloudTrailBucketManagement"
     effect = "Allow"
     actions = [
@@ -179,9 +179,9 @@ data "aws_iam_policy_document" "aws_dev_foundation_security" {
   }
 
   statement {
-    sid    = "CloudTrailBucketRead"
-    effect = "Allow"
-    actions = ["s3:Get*", "s3:List*"]
+    sid       = "CloudTrailBucketRead"
+    effect    = "Allow"
+    actions   = ["s3:Get*", "s3:List*"]
     resources = ["arn:aws:s3:::cloudtrail-logs-${data.aws_caller_identity.current.account_id}"]
   }
 
@@ -210,7 +210,7 @@ data "aws_iam_policy_document" "aws_dev_foundation_security" {
     resources = ["*"]
   }
 
-    statement {
+  statement {
     sid       = "ConfigServiceLinkedRoleCreate"
     effect    = "Allow"
     actions   = ["iam:CreateServiceLinkedRole"]
@@ -287,7 +287,7 @@ data "aws_iam_policy_document" "aws_dev_foundation_security" {
     resources = ["*"]
   }
 
-    statement {
+  statement {
     sid       = "GuardDutyServiceLinkedRole"
     effect    = "Allow"
     actions   = ["iam:CreateServiceLinkedRole"]
@@ -389,7 +389,7 @@ data "aws_iam_policy_document" "aws_dev_foundation_security" {
     resources = ["*"]
   }
 
-    statement {
+  statement {
     sid    = "AccessAnalyzerManagement"
     effect = "Allow"
     actions = [
@@ -448,9 +448,9 @@ data "aws_iam_policy_document" "aws_dev_foundation_eks" {
   }
 
   statement {
-    sid       = "EksRolePassRole"
-    effect    = "Allow"
-    actions   = ["iam:PassRole"]
+    sid     = "EksRolePassRole"
+    effect  = "Allow"
+    actions = ["iam:PassRole"]
     resources = [
       "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/eks-dev-cluster",
       "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/eks-dev-node-group",
@@ -466,7 +466,7 @@ data "aws_iam_policy_document" "aws_dev_foundation_eks" {
       "eks:CreateNodegroup", "eks:DeleteNodegroup",
       "eks:UpdateNodegroupConfig", "eks:UpdateNodegroupVersion",
       "eks:CreateAddon", "eks:DeleteAddon", "eks:UpdateAddon",
-      "eks:TagResource", "eks:UntagResource", "eks:CreateAccessEntry", 
+      "eks:TagResource", "eks:UntagResource", "eks:CreateAccessEntry",
       "eks:DeleteAccessEntry", "eks:UpdateAccessEntry",
       "eks:AssociateAccessPolicy", "eks:DisassociateAccessPolicy",
     ]
@@ -479,34 +479,34 @@ data "aws_iam_policy_document" "aws_dev_foundation_eks" {
     actions = [
       "eks:DescribeCluster", "eks:DescribeNodegroup", "eks:DescribeAddon",
       "eks:DescribeUpdate", "eks:ListClusters", "eks:ListNodegroups",
-      "eks:ListAddons", "eks:ListTagsForResource", "eks:DescribeAccessEntry", 
+      "eks:ListAddons", "eks:ListTagsForResource", "eks:DescribeAccessEntry",
       "eks:ListAccessEntries", "eks:ListAssociatedAccessPolicies",
     ]
     resources = ["*"]
   }
 
   statement {
-  sid       = "EksNodegroupServiceLinkedRoleCreate"
-  effect    = "Allow"
-  actions   = ["iam:CreateServiceLinkedRole"]
-  resources = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/aws-service-role/eks-nodegroup.amazonaws.com/AWSServiceRoleForAmazonEKSNodegroup"]
+    sid       = "EksNodegroupServiceLinkedRoleCreate"
+    effect    = "Allow"
+    actions   = ["iam:CreateServiceLinkedRole"]
+    resources = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/aws-service-role/eks-nodegroup.amazonaws.com/AWSServiceRoleForAmazonEKSNodegroup"]
 
-  condition {
-    test     = "StringEquals"
-    variable = "iam:AWSServiceName"
-    values   = ["eks-nodegroup.amazonaws.com"]
+    condition {
+      test     = "StringEquals"
+      variable = "iam:AWSServiceName"
+      values   = ["eks-nodegroup.amazonaws.com"]
+    }
   }
-}
 
-statement {
-  sid    = "EksNodegroupServiceLinkedRoleManage"
-  effect = "Allow"
-  actions = [
-    "iam:GetRole",
-    "iam:DeleteServiceLinkedRole",
-    "iam:GetServiceLinkedRoleDeletionStatus",
-  ]
-  resources = ["*"]
+  statement {
+    sid    = "EksNodegroupServiceLinkedRoleManage"
+    effect = "Allow"
+    actions = [
+      "iam:GetRole",
+      "iam:DeleteServiceLinkedRole",
+      "iam:GetServiceLinkedRoleDeletionStatus",
+    ]
+    resources = ["*"]
   }
 }
 
