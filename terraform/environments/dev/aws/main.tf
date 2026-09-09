@@ -27,7 +27,7 @@ module "eks" {
 
   vpc_id                 = module.networking.vpc_id
   private_app_subnet_ids = module.networking.private_app_subnet_ids
-  allowed_cidrs          = ["71.251.202.169/32"]
+  allowed_cidrs          = ["98.109.105.90/32"]
 
   tags = {
     Owner          = "platform-team"
