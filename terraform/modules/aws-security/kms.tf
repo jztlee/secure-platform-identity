@@ -44,7 +44,7 @@ data "aws_iam_policy_document" "environment_key" {
     resources = ["*"]
   }
 
-    statement {
+  statement {
     sid    = "AllowConfigToEncryptLogs"
     effect = "Allow"
 
@@ -91,7 +91,7 @@ resource "aws_kms_key" "environment" {
     Classification = "internal"
     ManagedBy      = "terraform"
   }
- }
+}
 
 resource "aws_kms_alias" "environment" {
   name          = "alias/dev-environment"
