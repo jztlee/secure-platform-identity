@@ -26,7 +26,7 @@ resource "aws_eks_node_group" "system" {
   node_group_name = "system"
   node_role_arn   = aws_iam_role.node.arn
   subnet_ids      = var.private_app_subnet_ids
-  version         = "1.35"
+  version         = "1.36"
 
   scaling_config {
     min_size     = 2
