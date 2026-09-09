@@ -38,3 +38,24 @@ jobs:
       - name: Test
         working-directory: platform-api
         run: go test ./...
+  
+  build-and-push:
+    runs-on: ubuntu-latest
+    needs: [terraform, go]
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::133857166442:role/github-actions-platform-api
+          aws-region: us-east-1
+      - uses: aws-actions/amazon-ecr-login@v2
+        id: ecr-login
+      - name: Build and push image
+        working-directory: platform-api
+        run: |
+          docker build --platform linux/amd64 -t ${{ steps.ecr-login.outputs.registry }}/platform-api:${{ github.sha }} .
+          docker push ${{ steps.ecr-login.outputs.registry }}/platform-api:${{ github.sha }}
