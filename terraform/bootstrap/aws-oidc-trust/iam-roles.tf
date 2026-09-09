@@ -539,9 +539,9 @@ data "aws_iam_policy_document" "aws_dev_foundation_eks_pod_identity" {
   }
 
   statement {
-    sid     = "KyvernoEcrReadRolePassRole"
-    effect  = "Allow"
-    actions = ["iam:PassRole"]
+    sid       = "KyvernoEcrReadRolePassRole"
+    effect    = "Allow"
+    actions   = ["iam:PassRole"]
     resources = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/kyverno-ecr-read"]
   }
 

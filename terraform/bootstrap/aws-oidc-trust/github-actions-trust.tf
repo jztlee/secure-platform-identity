@@ -67,10 +67,10 @@ data "aws_iam_policy_document" "github_actions_ecr" {
     resources = ["arn:aws:ecr:us-east-1:133857166442:repository/platform-api"]
   }
 
-   statement {
-   sid    = "EcrReadImage"
-   effect = "Allow"
-   actions = [
+  statement {
+    sid    = "EcrReadImage"
+    effect = "Allow"
+    actions = [
       "ecr:BatchGetImage",
       "ecr:GetDownloadUrlForLayer",
     ]
