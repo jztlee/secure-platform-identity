@@ -65,4 +65,15 @@ jobs:
           exit-code: 1
       - name: Push image
         run: docker push ${{ steps.ecr-login.outputs.registry }}/platform-api:${{ github.sha }}
+      - name: Generate SBOM
+        uses: anchore/sbom-action@v0.24.2
+        with:
+          image: ${{ steps.ecr-login.outputs.registry }}/platform-api:${{ github.sha }}
+          format: spdx-json
+          output-file: sbom.spdx.json
+      - name: Upload SBOM artifact
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: sbom
+          path: sbom.spdx.json
       
