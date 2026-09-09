@@ -45,3 +45,31 @@ resource "aws_iam_role" "github_actions" {
     ManagedBy      = "terraform"
   }
 }
+
+data "aws_iam_policy_document" "github_actions_ecr" {
+  statement {
+    sid       = "EcrAuthToken"
+    effect    = "Allow"
+    actions   = ["ecr:GetAuthorizationToken"]
+    resources = ["*"]
+  }
+
+  statement {
+    sid    = "EcrPushImage"
+    effect = "Allow"
+    actions = [
+      "ecr:BatchCheckLayerAvailability",
+      "ecr:PutImage",
+      "ecr:InitiateLayerUpload",
+      "ecr:UploadLayerPart",
+      "ecr:CompleteLayerUpload",
+    ]
+    resources = ["arn:aws:ecr:us-east-1:133857166442:repository/platform-api"]
+  }
+}
+
+resource "aws_iam_role_policy" "github_actions_ecr" {
+  name   = "ecr-push"
+  role   = aws_iam_role.github_actions.name
+  policy = data.aws_iam_policy_document.github_actions_ecr.json
+}
