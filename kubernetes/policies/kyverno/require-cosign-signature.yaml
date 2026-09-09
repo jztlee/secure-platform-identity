@@ -16,6 +16,7 @@ spec:
       verifyImages:
         - imageReferences:
             - "133857166442.dkr.ecr.us-east-1.amazonaws.com/platform-api:*"
+            - "133857166442.dkr.ecr.us-east-1.amazonaws.com/platform-api@sha256:*"
           attestors:
             - entries:
                 - keyless:
