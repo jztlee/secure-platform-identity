@@ -17,8 +17,10 @@ jobs:
       - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3
         with:
           terraform_version: "1.9.0"
+
       - name: Terraform fmt check
         run: terraform fmt -check -recursive terraform/
+
       - name: Terraform validate
         run: |
           cd terraform/environments/dev/aws
@@ -32,9 +34,11 @@ jobs:
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
         with:
           go-version: "1.26"
+
       - name: Build
         working-directory: platform-api
         run: go build ./...
+
       - name: Test
         working-directory: platform-api
         run: go test ./...
@@ -54,26 +58,43 @@ jobs:
           aws-region: us-east-1
       - uses: aws-actions/amazon-ecr-login@03f1aad4c6c7ffd436567f42f9384779290529bd # v2
         id: ecr-login
+      
       - name: Build image
         working-directory: platform-api
         run: docker build --platform linux/amd64 -t ${{ steps.ecr-login.outputs.registry }}/platform-api:${{ github.sha }} .
+      
       - name: Scan image for vulnerabilities
         uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: ${{ steps.ecr-login.outputs.registry }}/platform-api:${{ github.sha }}
           severity: CRITICAL,HIGH
           exit-code: 1
+
       - name: Push image
         run: docker push ${{ steps.ecr-login.outputs.registry }}/platform-api:${{ github.sha }}
+
       - name: Generate SBOM
         uses: anchore/sbom-action@v0.24.2
         with:
           image: ${{ steps.ecr-login.outputs.registry }}/platform-api:${{ github.sha }}
           format: spdx-json
           output-file: sbom.spdx.json
+
       - name: Upload SBOM artifact
         uses: actions/upload-artifact@v7.0.1
         with:
           name: sbom
           path: sbom.spdx.json
+      
+      - name: Install cosign
+        uses: sigstore/cosign-installer@v4.1.2
+
+      - name: Get image digest
+        id: digest
+        run: |
+          DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' ${{ steps.ecr-login.outputs.registry }}/platform-api:${{ github.sha }})
+          echo "digest=$DIGEST" >> "$GITHUB_OUTPUT"
+          
+      - name: Sign image
+        run: cosign sign --yes ${{ steps.digest.outputs.digest }}
       
