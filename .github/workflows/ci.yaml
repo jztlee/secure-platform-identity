@@ -54,8 +54,15 @@ jobs:
           aws-region: us-east-1
       - uses: aws-actions/amazon-ecr-login@03f1aad4c6c7ffd436567f42f9384779290529bd # v2
         id: ecr-login
-      - name: Build and push image
+      - name: Build image
         working-directory: platform-api
-        run: |
-          docker build --platform linux/amd64 -t ${{ steps.ecr-login.outputs.registry }}/platform-api:${{ github.sha }} .
-          docker push ${{ steps.ecr-login.outputs.registry }}/platform-api:${{ github.sha }}
+        run: docker build --platform linux/amd64 -t ${{ steps.ecr-login.outputs.registry }}/platform-api:${{ github.sha }} .
+      - name: Scan image for vulnerabilities
+        uses: aquasecurity/trivy-action@0.24.0
+        with:
+          image-ref: ${{ steps.ecr-login.outputs.registry }}/platform-api:${{ github.sha }}
+          severity: CRITICAL,HIGH
+          exit-code: 1
+      - name: Push image
+        run: docker push ${{ steps.ecr-login.outputs.registry }}/platform-api:${{ github.sha }}
+      
