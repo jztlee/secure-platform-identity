@@ -395,3 +395,55 @@ that constrains normal operation. Scoped to `platform-api` only, same
 reasoning as the other platform-api-scoped policies: no established
 usage baseline exists yet for the third-party charts to size a sensible
 quota against.
+
+## RBAC least-privilege audit (Phase 5)
+
+Spec §8 requires "no wildcard verbs/resources in ClusterRoles, no
+`cluster-admin` bindings outside a documented, logged break-glass
+identity." This is an audit, not a Kyverno policy — no enforcement
+mechanism was added, since blocking wildcard `ClusterRole` creation
+outright would break every operator-pattern chart in this cluster (Argo
+CD and the Prometheus Operator both structurally require broad
+permissions to manage arbitrary resources on behalf of what they deploy).
+
+**Findings:**
+- Every wildcard `ClusterRole` found (`argocd-application-controller`,
+  `argocd-server`, `kube-prometheus-stack-operator`, plus AWS/Kubernetes
+  system roles) is either system-managed or an inherent requirement of a
+  legitimate operator pattern — no evidence of anything we configured
+  ourselves being over-privileged.
+- Both existing `cluster-admin` `ClusterRoleBinding`s
+  (`system:masters`→`cluster-admin`, `eks:addon-manager`→
+  `eks:addon-cluster-admin`) are Kubernetes/AWS-foundational, not
+  something granted by this project.
+- **Real gap found:** checking EKS access entries directly
+  (`aws eks list-access-entries`) showed only `platform-admin` (the
+  everyday SSO admin identity) had Kubernetes-level cluster access —
+  `break-glass-admin`, the identity actually *named* and intended for
+  emergency access, had none. Every routine `kubectl` command and a
+  genuine incident response would have been indistinguishable in the
+  audit trail, since they'd be the same principal. This is the opposite
+  problem from what spec's wording warns about.
+
+**Fix:** added `break-glass-admin`'s role ARN to `cluster_admin_principal_arns`
+in [`terraform/environments/dev/aws/main.tf`](../../terraform/environments/dev/aws/main.tf),
+granting it a proper EKS access entry alongside `platform-admin`.
+Confirmed via `aws eks list-access-entries` after apply.
+
+**A related identity clarified during this fix, not a second gap:**
+`break-glass-dev` (an IAM user predating `break-glass-admin`, referenced
+in this doc's earlier MFA tradeoff entry) has no direct permissions of its
+own — its only inline policy (`AssumeBreakGlassAdmin`) lets it
+`sts:AssumeRole` into `break-glass-admin`. It's the intended low-privilege,
+MFA-gated entry point a human authenticates as before assuming the
+privileged role; the acting principal for any subsequent API or `kubectl`
+call becomes the assumed role, not the user. It doesn't need its own EKS
+access entry — granting the entry to the role it assumes into was the
+correct target, not a workaround.
+
+**Not covered by this audit** (spec's wording is specifically about
+`ClusterRole`s and `cluster-admin` bindings): namespaced `Role`s and
+`RoleBinding`s were not comprehensively reviewed. Worth a pass before
+calling this project interview-ready, particularly for anything the
+Argo CD or Prometheus Operator charts create with elevated namespaced
+permissions.
