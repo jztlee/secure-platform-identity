@@ -264,11 +264,24 @@ need explicit allow rules for Prometheus scraping, Argo CD↔API-server
 traffic, and Kyverno's own webhook calls before it's safe to turn on
 elsewhere), egress-deny (deferred entirely for now), immutable digests /
 no mutable tags as an admission rule (not just signature verification),
-namespace ownership labels + quotas, least-privilege RBAC audit (no
+namespace ownership labels + quotas, and least-privilege RBAC audit (no
 wildcard verbs/resources, no stray `cluster-admin` bindings outside
-`break-glass-admin`), and documenting the CloudWatch audit log retention
-period (control-plane logging itself was already enabled in an earlier
-phase).
+`break-glass-admin`).
+
+**CloudWatch audit log retention: done.** The EKS control-plane log group
+(`/aws/eks/dev/cluster`) was created implicitly by AWS when control-plane
+logging was enabled in an earlier phase, but was never brought under
+Terraform and had no retention policy — CloudWatch's default is "never
+expire," a real unbounded-cost gap (it had already accumulated ~1.45GB).
+Fixed via a declarative `import` block (Terraform 1.5+; the root-module
+restriction on `import` blocks means the block itself lives in
+`terraform/environments/dev/aws/imports.tf` even though the resource it
+targets is defined inside the `aws-eks` module) plus a new
+`aws_cloudwatch_log_group` resource setting `retention_in_days = 30`,
+matching the existing VPC flow logs retention for consistency. The import
+correctly adopted the existing log group and its accumulated history in
+place — the apply was `0 added, 1 changed, 0 destroyed`, not a
+destroy-and-recreate that would have lost the existing audit trail.
 
 ### `require-resource-hardening`
 
