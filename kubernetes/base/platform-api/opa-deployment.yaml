@@ -15,6 +15,8 @@ spec:
       labels:
         app: opa
     spec:
+      securityContext:
+        runAsNonRoot: true
       containers:
         - name: opa
           image: openpolicyagent/opa:1.4.2
@@ -39,6 +41,11 @@ spec:
             httpGet:
               path: /health
               port: 8181
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
       volumes:
         - name: policy
           configMap:

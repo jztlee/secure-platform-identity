@@ -15,6 +15,10 @@ spec:
         region: us-east-1
         vpcId: vpc-0400d96028822799f
         fullnameOverride: aws-load-balancer-controller
+        securityContext:
+          capabilities:
+            drop:
+              - ALL
   destination:
     server: https://kubernetes.default.svc
     namespace: kube-system
