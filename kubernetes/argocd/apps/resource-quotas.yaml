@@ -1,0 +1,18 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: resource-quotas
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/jztlee/secure-platform-identity.git
+    targetRevision: main
+    path: kubernetes/resource-quotas
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: default
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
