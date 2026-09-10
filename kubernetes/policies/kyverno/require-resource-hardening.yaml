@@ -3,7 +3,7 @@ kind: ClusterPolicy
 metadata:
   name: require-resource-hardening
 spec:
-  validationFailureAction: Audit
+  validationFailureAction: Enforce
   background: true
   rules:
     - name: require-readonly-rootfs
