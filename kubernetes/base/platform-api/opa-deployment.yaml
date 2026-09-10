@@ -17,6 +17,8 @@ spec:
     spec:
       securityContext:
         runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: opa
           image: openpolicyagent/opa:1.4.2
