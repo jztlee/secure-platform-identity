@@ -181,10 +181,88 @@ explicitly.
    from the first policy but setting `hostNetwork: true` was rejected,
    correctly citing `disallow-host-namespaces` from this policy by name.
 
+## NetworkPolicies (Phase 5)
+
+Unlike the entries above, these are plain Kubernetes `NetworkPolicy`
+objects, not Kyverno `ClusterPolicy` resources — no admission engine
+involved, enforced directly by the CNI.
+
+### `default-deny-ingress` + `allow-intra-namespace` (`platform-api`)
+
+**File:** [`kubernetes/base/platform-api/network-policy.yaml`](../../kubernetes/base/platform-api/network-policy.yaml)
+
+**What's denied:** Any ingress connection into a pod in the `platform-api`
+namespace that doesn't originate from another pod in that same namespace.
+Egress is untouched — this is deliberately ingress-only, the first and
+lowest-risk half of a full default-deny posture.
+
+**Why ingress-only, and why one namespace first:** egress-deny would risk
+breaking DNS, AWS API calls (Pod Identity), and every controller's
+external dependencies (cert-manager↔ACME, ESO↔Secrets Manager, Argo
+CD↔git/Helm repos) all at once. Ingress-only, scoped to one namespace we
+fully control, gives real security value (nothing outside `platform-api`
+can directly reach it or `opa`) with a much smaller blast radius. This is
+the pilot for extending the same pattern to other namespaces later.
+
+**Why two policies, not one:** an empty `podSelector` with no `ingress`
+rules blocks *all* ingress into every pod in the namespace, including
+pod-to-pod traffic *within* the same namespace. Since `platform-api` calls
+`opa` over the network, a bare default-deny would have broken the app
+immediately. `allow-intra-namespace` (an empty `podSelector` under `from`,
+meaning "any pod in this namespace") adds that permission back —
+NetworkPolicies are additive, so the two combine to: same-namespace
+allowed, everything else denied.
+
+**A real infrastructure gap this surfaced, not just a config task:**
+`vpc-cni` (the VPC CNI) had never been Terraform-managed on this cluster
+at all — it was running whatever unmanaged, default version and config
+EKS bundled at cluster creation. `NETWORK_POLICY_ENFORCING_MODE=standard`
+was present as an env var, but the actual master switch,
+`ENABLE_NETWORK_POLICY`, was never set — meaning NetworkPolicy objects
+were being silently accepted by the API server but never enforced at all.
+Confirmed via the absence of any `PolicyEndpoint` objects (the VPC CNI
+network-policy controller's internal representation of a compiled
+policy). Fixed by bringing `vpc-cni` under Terraform for the first time as
+a proper `aws_eks_addon` (see
+[`terraform/modules/aws-eks/addons.tf`](../../terraform/modules/aws-eks/addons.tf)),
+pinned to the exact version already running so only the network-policy
+config changed, with `configuration_values` explicitly setting
+`enableNetworkPolicy: true`.
+
+**Also learned:** the VPC CNI's eBPF-based enforcement is not retroactive
+— pods running before a policy exists (or before the feature itself was
+enabled) don't get enforcement attached until they're recreated. `opa`
+needed two separate restarts during this rollout: once when the policy
+was first created, and again after the `vpc-cni` addon change actually
+turned enforcement on, since the first restart happened before the
+feature was really active.
+
+**Side discovery, fixed separately:** testing this required restarting
+`platform-api`, which revealed its running image predated cosign signing
+(from phase 7) and had no valid signature — meaning it could not be
+restarted, rescheduled, or survive a node failure at all under
+`require-cosign-signature`'s enforcement. Fixed by updating
+`kubernetes/base/platform-api/deployment.yaml` to a current, verified,
+signed digest. This is a symptom of the still-open phase 8 gap:
+`platform-api` isn't Argo CD-managed, so nothing has been redeploying it
+with fresh, signed images since CI started signing.
+
+**How it's tested:**
+1. Same-namespace request (`platform-api`'s own namespace → `opa:8181`)
+   succeeds (`HTTP_STATUS:200`).
+2. Cross-namespace request (`default` namespace →
+   `opa.platform-api.svc.cluster.local:8181`) times out
+   (`HTTP_STATUS:000`, curl exit 28) — a real connection-level block, not
+   an application-level rejection.
+3. Confirmed via `kubectl get policyendpoints -n platform-api` that both
+   policies actually compiled into enforced endpoints, not just accepted
+   API objects.
+
 **Still needed for Phase 5** (spec §8's full "enforced everywhere" list):
-default-deny NetworkPolicies (flagged as the highest-risk remaining item —
-could break Prometheus scraping, Argo CD↔API-server traffic, or Kyverno's
-own webhooks if not allowlisted correctly first), read-only root
+extending default-deny to the remaining namespaces (higher risk — will
+need explicit allow rules for Prometheus scraping, Argo CD↔API-server
+traffic, and Kyverno's own webhook calls before it's safe to turn on
+elsewhere), egress-deny (deferred entirely for now), read-only root
 filesystem, explicit resource requests/limits enforcement, immutable
 digests / no mutable tags as an admission rule (not just signature
 verification), namespace ownership labels + quotas, least-privilege RBAC
