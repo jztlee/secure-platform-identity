@@ -3,7 +3,7 @@ kind: ClusterPolicy
 metadata:
   name: require-namespace-labels
 spec:
-  validationFailureAction: Audit
+  validationFailureAction: Enforce
   background: true
   rules:
     - name: require-owner-and-environment-labels
