@@ -12,6 +12,11 @@ spec:
           - resources:
               kinds:
                 - Pod
+      exclude:
+        any:
+          - resources:
+              namespaces:
+                - kube-system
       validate:
         message: "Privileged containers are not allowed."
         pattern:
@@ -26,6 +31,11 @@ spec:
           - resources:
               kinds:
                 - Pod
+      exclude:
+        any:
+          - resources:
+              namespaces:
+                - kube-system
       validate:
         message: "Containers must run as a non-root user."
         anyPattern:
@@ -43,6 +53,11 @@ spec:
           - resources:
               kinds:
                 - Pod
+      exclude:
+        any:
+          - resources:
+              namespaces:
+                - kube-system
       validate:
         message: "Privilege escalation must be explicitly disallowed."
         pattern:
@@ -57,6 +72,11 @@ spec:
           - resources:
               kinds:
                 - Pod
+      exclude:
+        any:
+          - resources:
+              namespaces:
+                - kube-system
       validate:
         message: "Containers must drop the ALL capability and add nothing beyond NET_BIND_SERVICE."
         pattern:
