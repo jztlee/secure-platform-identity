@@ -12,11 +12,8 @@ spec:
           - resources:
               kinds:
                 - Pod
-      exclude:
-        any:
-          - resources:
               namespaces:
-                - kube-system
+                - platform-api
       validate:
         message: "Containers must set readOnlyRootFilesystem: true."
         pattern:
@@ -31,11 +28,8 @@ spec:
           - resources:
               kinds:
                 - Pod
-      exclude:
-        any:
-          - resources:
               namespaces:
-                - kube-system
+                - platform-api
       validate:
         message: "Containers must set explicit resource requests (cpu, memory) and a CPU limit."
         pattern:
