@@ -323,3 +323,38 @@ growing exclude-list as more namespaces get added to the cluster.
    configuration and a writable root filesystem was rejected, correctly
    citing both `require-readonly-rootfs` and
    `require-resource-requests-limits` by name.
+
+### `require-immutable-image-digest`
+
+**File:** [`kubernetes/policies/kyverno/require-immutable-image-digest.yaml`](../../kubernetes/policies/kyverno/require-immutable-image-digest.yaml)
+
+**What's denied:** Any `Pod` in the `platform-api` namespace whose
+container image is referenced by tag rather than digest (`@sha256:...`).
+`validationFailureAction: Enforce`.
+
+**Why scoped to `platform-api` only:** same reasoning as
+`require-resource-hardening`, and even more clear-cut here — every
+third-party Helm chart installed tonight (Argo CD, Kyverno, cert-manager,
+External Secrets Operator, kube-prometheus-stack, the OTel Collector)
+references its images by semantic-version tag, not digest, as standard
+practice for tracking upstream releases. Enforcing digest-only cluster-wide
+would break all seven services immediately, not just some of them.
+
+**Real violation found and fixed, not exempted:** `opa`'s manifest
+referenced `openpolicyagent/opa:1.4.2` (a tag) despite `platform-api`
+itself already being digest-pinned. Fixed by resolving the exact digest
+already running (`kubectl get pod ... -o
+jsonpath='{.status.containerStatuses[0].imageID}'`, rather than querying
+Docker Hub separately, to guarantee the pinned digest matches what was
+actually verified running) and updating
+`kubernetes/base/platform-api/opa-deployment.yaml` to reference it
+directly.
+
+**How it's tested:**
+1. Background-scan confirmed `opa`'s live pod reached `0 FAIL` after the
+   digest fix.
+2. A test pod satisfying every other policy enforced tonight (non-root,
+   no privilege escalation, dropped capabilities, read-only root,
+   resource requests/limits) but referencing `alpine:latest` by tag was
+   rejected, correctly citing only `require-image-digest` — confirming
+   isolation from the other rules, not just that *something* got blocked.
