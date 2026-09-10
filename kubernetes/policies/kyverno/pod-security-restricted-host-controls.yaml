@@ -1,0 +1,93 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: pod-security-restricted-host-controls
+spec:
+  validationFailureAction: Audit
+  background: true
+  rules:
+    - name: disallow-host-namespaces
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+      exclude:
+        any:
+          - resources:
+              namespaces:
+                - kube-system
+          - resources:
+              names:
+                - "*node-exporter*"
+      validate:
+        message: "Host namespaces (hostNetwork, hostPID, hostIPC) are not allowed."
+        pattern:
+          spec:
+            =(hostNetwork): "false"
+            =(hostPID): "false"
+            =(hostIPC): "false"
+
+    - name: disallow-host-path
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+      exclude:
+        any:
+          - resources:
+              namespaces:
+                - kube-system
+          - resources:
+              names:
+                - "*node-exporter*"
+      validate:
+        message: "hostPath volumes are not allowed."
+        pattern:
+          spec:
+            =(volumes):
+              - X(hostPath): "null"
+
+    - name: disallow-host-ports
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+      exclude:
+        any:
+          - resources:
+              namespaces:
+                - kube-system
+      validate:
+        message: "hostPort is not allowed on container ports."
+        pattern:
+          spec:
+            containers:
+              - =(ports):
+                  - X(hostPort): "null"
+
+    - name: restrict-seccomp
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+      exclude:
+        any:
+          - resources:
+              namespaces:
+                - kube-system
+      validate:
+        message: "A seccompProfile of RuntimeDefault or Localhost is required."
+        anyPattern:
+          - spec:
+              securityContext:
+                seccompProfile:
+                  type: "RuntimeDefault | Localhost"
+          - spec:
+              containers:
+                - securityContext:
+                    seccompProfile:
+                      type: "RuntimeDefault | Localhost"
