@@ -3,7 +3,7 @@ kind: ClusterPolicy
 metadata:
   name: pod-security-restricted
 spec:
-  validationFailureAction: Audit
+  validationFailureAction: Enforce
   background: true
   rules:
     - name: disallow-privileged-containers
