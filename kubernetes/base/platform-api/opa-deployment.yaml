@@ -21,7 +21,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: opa
-          image: openpolicyagent/opa:1.4.2
+          image: openpolicyagent/opa@sha256:35a093d9ae828373cf88f68ecaa8189ab26287468074a3b78f0601d9c8b7a4f5
           args:
             - "run"
             - "--server"
