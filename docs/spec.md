@@ -183,9 +183,13 @@ Collector, **Kyverno** for admission control (pick one over Gatekeeper —
 Kyverno's YAML policies are faster to write and demo than Rego for this
 scope), ExternalDNS if a zone is available, AWS Load Balancer Controller.
 
-**Enforced everywhere:** namespace ownership labels + quotas; Pod Security
-Standards (restricted); default-deny NetworkPolicies; non-root, read-only-fs,
-dropped capabilities, seccomp default, explicit resource requests/limits;
+**Enforced everywhere:** namespace ownership labels + pod-count quotas; Pod
+Security Standards (restricted); default-deny NetworkPolicies; non-root,
+read-only-fs, dropped capabilities, seccomp default. **Explicit resource
+requests/limits, enforced (Kyverno + full CPU/memory quotas): required only
+for `platform-api`** (workloads we author). Third-party chart defaults
+(Argo CD, cert-manager, Kyverno, kube-prometheus-stack, ESO) are exempted —
+see ADR-0002.
 **immutable image digests, never mutable tags**; workload identity only —
 never static cloud credentials in Kubernetes secrets. Admission policy denies
 privileged containers, root/privilege-escalation/writable-root-fs, missing
