@@ -1,0 +1,29 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-namespace-labels
+spec:
+  validationFailureAction: Audit
+  background: true
+  rules:
+    - name: require-owner-and-environment-labels
+      match:
+        any:
+          - resources:
+              kinds:
+                - Namespace
+      exclude:
+        any:
+          - resources:
+              names:
+                - kube-system
+                - kube-public
+                - kube-node-lease
+                - default
+      validate:
+        message: "Namespaces must have 'owner' and 'environment' labels."
+        pattern:
+          metadata:
+            labels:
+              owner: "?*"
+              environment: "?*"

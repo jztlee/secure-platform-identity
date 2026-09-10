@@ -4,3 +4,5 @@ metadata:
   name: platform-api
   labels:
     name: platform-team
+    owner: platform-team
+    environment: dev
