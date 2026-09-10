@@ -37,7 +37,7 @@ spec:
               namespaces:
                 - kube-system
       validate:
-        message: "Containers must set explicit resource requests and limits for cpu and memory."
+        message: "Containers must set explicit resource requests (cpu, memory) and a CPU limit."
         pattern:
           spec:
             containers:
@@ -47,4 +47,3 @@ spec:
                     memory: "?*"
                   limits:
                     cpu: "?*"
-                    memory: "?*"
