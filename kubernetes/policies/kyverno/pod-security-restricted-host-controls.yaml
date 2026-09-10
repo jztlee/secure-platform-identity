@@ -61,12 +61,12 @@ spec:
               namespaces:
                 - kube-system
       validate:
-        message: "hostPort is not allowed on container ports."
+        message: "hostPort must be unset or set to 0."
         pattern:
           spec:
             containers:
               - =(ports):
-                  - X(hostPort): "null"
+                  - =(hostPort): 0
 
     - name: restrict-seccomp
       match:

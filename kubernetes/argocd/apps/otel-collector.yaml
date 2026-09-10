@@ -16,6 +16,8 @@ spec:
           repository: otel/opentelemetry-collector-contrib
         podSecurityContext:
           runAsNonRoot: true
+          seccompProfile:
+            type: RuntimeDefault
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:

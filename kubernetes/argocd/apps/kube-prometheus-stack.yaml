@@ -19,6 +19,9 @@ spec:
             capabilities:
               drop:
                 - ALL
+          securityContext:
+            seccompProfile:
+              type: RuntimeDefault
   destination:
     server: https://kubernetes.default.svc
     namespace: monitoring
