@@ -87,3 +87,32 @@ not just that a `.rego` file exists).
   `require-cosign-signature` policy the same way it did before this pin was
   added, since Kyverno fails closed with "no signatures found" rather than
   an obvious version-mismatch error.
+
+- **`require-resource-hardening` (read-only root filesystem + explicit
+  resource requests/CPU limits) is scoped to the `platform-api` namespace
+  only, not cluster-wide.** Every third-party chart installed so far —
+  Argo CD, cert-manager, External Secrets Operator, Kyverno's own
+  controllers, and the kube-prometheus-stack components — fails this
+  policy, and fixing it properly is real, uneven work: Argo CD's chart sets
+  *no* resource configuration at all by default (confirmed via `kubectl get
+  deployment ... -o jsonpath='{.spec.template.spec.containers[0].resources}'`
+  returning `{}`), and since it was installed via a one-time manual `helm
+  install` rather than an Argo CD Application, fixing it means a manual
+  `helm upgrade` with per-component values across ~7 sub-components — not
+  a quick edit, and not committed anywhere as code the way everything else
+  in this project is. Deliberate tradeoff, not an oversight: these
+  components already pass every *other* policy enforced tonight (non-root,
+  no privilege escalation, dropped capabilities), so the incremental risk
+  reduction from read-only-root and CPU limits specifically is secondary,
+  weighed against an estimated 1.5–2.5 hours of additional work with real
+  odds of hitting another genuine complication along the way (e.g. Argo
+  CD's `repo-server` clones git repos and renders Helm charts, and
+  plausibly needs writable scratch space that a read-only root filesystem
+  would break). The honest gap this leaves: no CPU limit on these
+  components means a bug or compromise in any of them could consume more
+  of a node's resources than intended — a real noisy-neighbor risk on a
+  3-node cluster, not a theoretical one. Revisit before calling this
+  project interview-ready, ideally via a namespace-label-based scope
+  (`namespaceSelector` on a `workload-tier` label) rather than a hardcoded
+  namespace name, so extending coverage later doesn't require editing the
+  policy itself each time.
