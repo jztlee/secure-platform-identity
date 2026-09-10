@@ -262,11 +262,51 @@ with fresh, signed images since CI started signing.
 extending default-deny to the remaining namespaces (higher risk — will
 need explicit allow rules for Prometheus scraping, Argo CD↔API-server
 traffic, and Kyverno's own webhook calls before it's safe to turn on
-elsewhere), egress-deny (deferred entirely for now), read-only root
-filesystem, explicit resource requests/limits enforcement, immutable
-digests / no mutable tags as an admission rule (not just signature
-verification), namespace ownership labels + quotas, least-privilege RBAC
-audit (no wildcard verbs/resources, no stray `cluster-admin` bindings
-outside `break-glass-admin`), and documenting the CloudWatch audit log
-retention period (control-plane logging itself was already enabled in an
-earlier phase).
+elsewhere), egress-deny (deferred entirely for now), immutable digests /
+no mutable tags as an admission rule (not just signature verification),
+namespace ownership labels + quotas, least-privilege RBAC audit (no
+wildcard verbs/resources, no stray `cluster-admin` bindings outside
+`break-glass-admin`), and documenting the CloudWatch audit log retention
+period (control-plane logging itself was already enabled in an earlier
+phase).
+
+### `require-resource-hardening`
+
+**File:** [`kubernetes/policies/kyverno/require-resource-hardening.yaml`](../../kubernetes/policies/kyverno/require-resource-hardening.yaml)
+
+**What's denied:** Any `Pod` in the `platform-api` namespace whose
+container doesn't set `readOnlyRootFilesystem: true`, or doesn't set
+explicit `resources.requests` (cpu and memory) plus a `resources.limits`
+CPU value. `validationFailureAction: Enforce`.
+
+**Why CPU limit but not memory limit:** a real, deliberate scoping
+decision, not spec's literal wording. Memory limits carry genuine
+operational risk on GC-heavy workloads (Go, Java) — a limit set even
+slightly too conservative causes unpredictable OOM-kills under load, which
+is a worse failure mode than "no ceiling exists." CPU limits are much
+lower-risk to require broadly: the worst case is throttling (a
+performance hit), not a crash. Requests are required unconditionally for
+both, since the scheduler needs them for bin-packing regardless.
+
+**Why scoped to `platform-api` only, not cluster-wide:** see the matching
+tradeoff entry in `docs/acceptance-checklist.md` for the full reasoning —
+in short, every third-party chart installed so far fails this policy, and
+fixing all of them (particularly Argo CD, whose chart sets *no* resource
+configuration at all and isn't GitOps-managed) is real, uneven work with
+a secondary security payoff compared to what's already enforced on those
+same components. `match` targets the `platform-api` namespace directly
+rather than excluding everything else — cleaner than maintaining a
+growing exclude-list as more namespaces get added to the cluster.
+
+**How it's tested:**
+1. Background-scan `PolicyReport`s confirmed `platform-api` and `opa`
+   both pass cleanly after `opa` was updated to set
+   `readOnlyRootFilesystem: true` (verified functionally, not just that
+   the pod started — a live request through it still returned `200` after
+   the change, confirming OPA doesn't need writable root for this
+   invocation).
+2. A test pod satisfying every other policy enforced tonight (non-root,
+   no privilege escalation, dropped capabilities) but with no resource
+   configuration and a writable root filesystem was rejected, correctly
+   citing both `require-readonly-rootfs` and
+   `require-resource-requests-limits` by name.
