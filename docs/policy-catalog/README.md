@@ -59,9 +59,62 @@ CI step that intentionally tries to deploy an unsigned image and asserts
 rejection) — only the manual verification above. Worth adding before
 calling Phase 5 complete.
 
-**Still needed for Phase 5** (spec §8's full "enforced everywhere" list —
-not yet written): Pod Security Standards (restricted), default-deny
-NetworkPolicies, non-root/read-only-fs/dropped-capabilities/seccomp,
-explicit resource limits, namespace ownership labels + quotas, and
-least-privilege RBAC (no wildcard verbs/resources, no stray
-`cluster-admin` bindings outside `break-glass-admin`).
+### `pod-security-restricted`
+
+**File:** [`kubernetes/policies/kyverno/pod-security-restricted.yaml`](../../kubernetes/policies/kyverno/pod-security-restricted.yaml)
+
+**What's denied:** Any `Pod` that (1) runs a privileged container, (2)
+does not explicitly set `runAsNonRoot: true`, (3) does not explicitly set
+`allowPrivilegeEscalation: false`, or (4) does not drop the `ALL`
+capability set. `validationFailureAction: Enforce` — this blocks
+admission.
+
+**Why:** Covers the core of spec §8's Pod Security Standards (restricted)
+requirement. This is the first subset of the full restricted profile —
+host-namespace, hostPath, hostPort, seccomp, and volume-type restrictions
+are still to come as a follow-up policy.
+
+**Scope:** Cluster-wide (`match: kinds: [Pod]`), with `kube-system`
+explicitly excluded on every rule. That exclusion is deliberate, not a
+gap: `aws-node` (VPC CNI), `kube-proxy`, and `eks-pod-identity-agent` are
+system components that inherently require privileged/root/host-level
+access to do their job — they aren't misconfigured, that's what they are.
+Matches Kyverno's own default behavior of excluding `kube-system` from
+its bundled policies.
+
+**Rollout process (worth preserving as the pattern for future policies):**
+deployed first with `validationFailureAction: Audit` and `background:
+true`, which scanned every already-running resource in the cluster
+without blocking anything. That surfaced real, fixable violations in
+components this project directly controls — `aws-load-balancer-controller`
+(missing capability drop), the OTel Collector (missing security context
+entirely), `kube-prometheus-stack`'s `node-exporter` (missing
+privilege-escalation guard and capability drop), and the `opa` sidecar in
+`kubernetes/base/platform-api/opa-deployment.yaml` (missing security
+context entirely) — each fixed via Helm values or a direct manifest edit,
+not exempted. Only after every fixable violation was resolved did the
+policy flip to `Enforce`.
+
+**How it's tested:**
+1. Background-scan `PolicyReport`s confirmed every non-`kube-system`
+   workload passes all four rules after the fixes above (`kubectl get
+   policyreport -A`).
+2. A deliberately privileged test pod (`--privileged`, no security
+   context) was rejected outright by the admission webhook, correctly
+   citing all four rules at once.
+
+**Note on report staleness:** Kyverno's periodic background rescan runs
+about once an hour by default; restarting `kyverno-background-controller`
+does *not* force an immediate rescan, it just resets that timer. Existing
+`PolicyReport`s for unchanged resources (like `kube-system`'s daemonsets)
+can lag behind a policy change by up to that interval even though the
+live policy is already correctly enforcing — don't mistake a stale report
+for a broken exclusion; check the live `ClusterPolicy` object
+(`kubectl get clusterpolicy <name> -o yaml`) instead.
+
+**Still needed for Phase 5** (spec §8's full "enforced everywhere" list):
+the remaining Pod Security Standards rules (host namespaces, hostPath,
+hostPort, seccomp, restricted volume types), default-deny NetworkPolicies,
+namespace ownership labels + quotas, and least-privilege RBAC (no wildcard
+verbs/resources, no stray `cluster-admin` bindings outside
+`break-glass-admin`).
