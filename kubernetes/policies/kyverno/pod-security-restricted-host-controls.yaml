@@ -60,6 +60,9 @@ spec:
           - resources:
               namespaces:
                 - kube-system
+          - resources:
+              names:
+                - "*node-exporter*"
       validate:
         message: "hostPort must be unset or set to 0."
         pattern:
