@@ -48,6 +48,7 @@ spec:
             capabilities:
               drop:
                 - ALL
+            readOnlyRootFilesystem: true
       volumes:
         - name: policy
           configMap:
