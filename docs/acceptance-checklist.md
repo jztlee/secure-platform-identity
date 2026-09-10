@@ -5,14 +5,14 @@ not when the code merely exists, but when we've verified the behavior
 (e.g. "OPA policies are tested" means tests run and fail on a bad policy,
 not just that a `.rego` file exists).
 
-- [ ] HCP Terraform produces a separate, reviewable plan for the AWS dev environment.
-- [ ] No static cloud credentials anywhere — not Terraform, not Actions, not K8s.
-- [ ] EKS is deployed with a secure network + identity baseline.
+- [x] HCP Terraform produces a separate, reviewable plan for the AWS dev environment.
+- [ ] No static cloud credentials anywhere — not Terraform, not Actions, not K8s. (see tradeoff below — one necessary exception)
+- [x] EKS is deployed with a secure network + identity baseline.
 - [ ] External IdP provides SSO + MFA; SCIM model documented.
 - [ ] Go API calls OPA and fails closed when OPA is down.
 - [ ] OPA policies are tested and correctly deny an unauthorized action.
 - [ ] A workload retrieves a permitted secret via its own identity; an unauthorized workload is denied.
-- [ ] CI scans source, dependencies, Terraform, and images before publish.
+- [x] CI scans source, dependencies, Terraform, and images before publish.
 - [ ] GitOps deploys the signed image to the cluster by digest.
 - [ ] Grafana shows service/cluster health; a controlled failure fires an alert.
 - [ ] A recorded recovery exercise demonstrates restart, rollback, and backup restore.
@@ -48,3 +48,42 @@ not just that a `.rego` file exists).
   by not having a spare hardware key on hand during Phase 3. Swap for a
   dedicated FIDO2 security key before calling this project
   interview-ready.
+
+- **`bootstrap-operator` requires a static, long-lived IAM user access key**
+  — this is the one static credential in the whole project, and it's a
+  necessary exception rather than an oversight: at the very first bootstrap
+  step (creating the OIDC providers and trust relationships that everything
+  else assumes), no assumable role exists yet for it to use instead. Every
+  mutating action on that identity is gated behind an active MFA session
+  (`aws:MultiFactorAuthPresent` conditions on every sensitive statement), so
+  the static key alone grants nothing beyond `sts:GetSessionToken`. Revisit
+  whether this can be replaced with an MFA-gated `AssumeRole` flow from a
+  separate, unprivileged base identity before calling this project
+  interview-ready.
+
+- **`bootstrap-operator`'s own IAM policy is a customer-managed policy
+  (`arn:aws:iam::133857166442:policy/bootstrap-operator`) that lives in AWS
+  but is not tracked in Terraform anywhere.** Discovered during Phase 5 when
+  granting it new managed-policy permissions required editing it directly
+  via the AWS CLI (`aws iam create-policy-version`), since there was no
+  `.tf` file to change. Every other IAM policy in this project is Terraform
+  state; this one is a manual, out-of-band exception because it has to
+  exist before any Terraform-managed trust relationship can bootstrap it.
+  Import it into Terraform state (`terraform import`) before calling this
+  project interview-ready, so at least its *current* content is reviewable
+  in git even if updates still require care around the bootstrap
+  chicken-and-egg problem.
+
+- **CI pins `cosign-release: 'v2.5.0'` in the `cosign-installer` action
+  instead of tracking latest.** Cosign v3.x+ made OCI 1.1 referrers-only
+  signature storage the unconditional default, with no flag to opt back
+  into the classic `sha256-<digest>.sig` tag convention. Kyverno v1.19.0
+  (the current latest chart release as of Phase 5) only checks that classic
+  tag convention for keyless `verifyImages` — it has no support yet for
+  discovering signatures via OCI 1.1 referrers. Pinning cosign to the last
+  v2.x release keeps CI's signing format compatible with what Kyverno can
+  actually verify. Revisit this pin once Kyverno ships referrers support
+  (tracked upstream) — un-pinning too early will silently break the
+  `require-cosign-signature` policy the same way it did before this pin was
+  added, since Kyverno fails closed with "no signatures found" rather than
+  an obvious version-mismatch error.
