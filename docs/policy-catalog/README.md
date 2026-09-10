@@ -358,3 +358,40 @@ directly.
    resource requests/limits) but referencing `alpine:latest` by tag was
    rejected, correctly citing only `require-image-digest` — confirming
    isolation from the other rules, not just that *something* got blocked.
+
+### `require-namespace-labels`
+
+**File:** [`kubernetes/policies/kyverno/require-namespace-labels.yaml`](../../kubernetes/policies/kyverno/require-namespace-labels.yaml)
+
+**What's denied:** Creating or updating any `Namespace` without both an
+`owner` and an `environment` label, except the built-in
+`kube-system`/`kube-public`/`kube-node-lease`/`default` namespaces.
+`validationFailureAction: Enforce`.
+
+**A different resource scope than every other policy tonight:**
+`Namespace` is cluster-scoped, not namespaced, so Kyverno reports on it
+via `ClusterPolicyReport`, not the namespaced `PolicyReport` every other
+policy in this catalog uses. Worth remembering — checking the wrong report
+type looks identical to "nothing has been scanned yet."
+
+**How it's tested:**
+1. Every existing namespace this project created (`argocd`,
+   `cert-manager`, `external-secrets`, `kyverno`, `monitoring`,
+   `observability`, `platform-api`) was labeled with `owner=platform-team
+   environment=dev` and confirmed clean via `ClusterPolicyReport` before
+   enforcement was turned on.
+2. `kubectl create namespace unlabeled-test` (no labels) was rejected
+   outright by the admission webhook, correctly citing this rule.
+
+**Paired with a plain `ResourceQuota`** on `platform-api`
+([`kubernetes/base/platform-api/resource-quota.yaml`](../../kubernetes/base/platform-api/resource-quota.yaml))
+— not a Kyverno policy, a native Kubernetes object, enforced directly by
+the API server. Caps the namespace's *total* resource consumption (not
+per-pod), sized generously at roughly 3x current usage (`pods: 10`,
+`requests.cpu: 500m`, `requests.memory: 512Mi`, `limits.cpu: 1`) so it's a
+genuine safety ceiling against runaway growth — a bug or misconfiguration
+consuming unbounded resources in one namespace — rather than something
+that constrains normal operation. Scoped to `platform-api` only, same
+reasoning as the other platform-api-scoped policies: no established
+usage baseline exists yet for the third-party charts to size a sensible
+quota against.
