@@ -1,0 +1,22 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-immutable-image-digest
+spec:
+  validationFailureAction: Audit
+  background: true
+  rules:
+    - name: require-image-digest
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+              namespaces:
+                - platform-api
+      validate:
+        message: "Container images must be referenced by digest (@sha256:...), not by mutable tag."
+        pattern:
+          spec:
+            containers:
+              - image: "*@sha256:*"
