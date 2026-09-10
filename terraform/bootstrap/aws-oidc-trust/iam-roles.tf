@@ -593,6 +593,45 @@ resource "aws_iam_role_policy_attachment" "aws_dev_foundation_eks_pod_identity" 
   policy_arn = aws_iam_policy.aws_dev_foundation_eks_pod_identity.arn
 }
 
+data "aws_iam_policy_document" "aws_dev_foundation_eks_logs" {
+  statement {
+    sid    = "EksClusterLogGroupManagement"
+    effect = "Allow"
+    actions = [
+      "logs:CreateLogGroup", "logs:DeleteLogGroup",
+      "logs:PutRetentionPolicy", "logs:TagResource", "logs:UntagResource",
+    ]
+    resources = ["arn:aws:logs:us-east-1:${data.aws_caller_identity.current.account_id}:log-group:/aws/eks/dev/cluster"]
+  }
+
+  statement {
+    sid    = "EksClusterLogGroupRead"
+    effect = "Allow"
+    actions = [
+      "logs:DescribeLogGroups", "logs:ListTagsForResource",
+    ]
+    resources = ["arn:aws:logs:us-east-1:${data.aws_caller_identity.current.account_id}:log-group:/aws/eks/dev/cluster"]
+  }
+}
+
+resource "aws_iam_policy" "aws_dev_foundation_eks_logs" {
+  name   = "aws-dev-foundation-eks-logs"
+  policy = data.aws_iam_policy_document.aws_dev_foundation_eks_logs.json
+
+  tags = {
+    Owner          = "platform-team"
+    Environment    = "dev"
+    CostCenter     = "platform-eng"
+    Classification = "internal"
+    ManagedBy      = "terraform"
+  }
+}
+
+resource "aws_iam_role_policy_attachment" "aws_dev_foundation_eks_logs" {
+  role       = aws_iam_role.aws_dev_foundation.name
+  policy_arn = aws_iam_policy.aws_dev_foundation_eks_logs.arn
+}
+
 data "aws_iam_policy_document" "aws_dev_foundation_managed_policies" {
   statement {
     sid    = "ManagedPolicyManagement"
