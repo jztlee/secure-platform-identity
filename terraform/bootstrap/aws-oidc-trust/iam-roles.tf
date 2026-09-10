@@ -518,31 +518,41 @@ resource "aws_iam_role_policy" "aws_dev_foundation_eks" {
 
 data "aws_iam_policy_document" "aws_dev_foundation_eks_pod_identity" {
   statement {
-    sid    = "KyvernoEcrReadRoleManagement"
+    sid    = "PodIdentityRoleManagement"
     effect = "Allow"
     actions = [
       "iam:CreateRole", "iam:DeleteRole", "iam:UpdateRole",
       "iam:TagRole", "iam:UntagRole",
       "iam:PutRolePolicy", "iam:DeleteRolePolicy",
+      "iam:AttachRolePolicy", "iam:DetachRolePolicy",
     ]
-    resources = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/kyverno-ecr-read"]
+    resources = [
+      "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/kyverno-ecr-read",
+      "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/aws-load-balancer-controller",
+    ]
   }
 
   statement {
-    sid    = "KyvernoEcrReadRoleRead"
+    sid    = "PodIdentityRoleRead"
     effect = "Allow"
     actions = [
       "iam:GetRole", "iam:GetRolePolicy", "iam:ListRoleTags",
       "iam:ListAttachedRolePolicies", "iam:ListRolePolicies",
     ]
-    resources = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/kyverno-ecr-read"]
+    resources = [
+      "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/kyverno-ecr-read",
+      "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/aws-load-balancer-controller",
+    ]
   }
 
   statement {
-    sid       = "KyvernoEcrReadRolePassRole"
-    effect    = "Allow"
-    actions   = ["iam:PassRole"]
-    resources = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/kyverno-ecr-read"]
+    sid    = "PodIdentityRolePassRole"
+    effect = "Allow"
+    actions = ["iam:PassRole"]
+    resources = [
+      "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/kyverno-ecr-read",
+      "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/aws-load-balancer-controller",
+    ]
   }
 
   statement {
@@ -592,10 +602,7 @@ data "aws_iam_policy_document" "aws_dev_foundation_managed_policies" {
       "iam:CreatePolicyVersion", "iam:DeletePolicyVersion",
       "iam:TagPolicy", "iam:UntagPolicy",
     ]
-    resources = [
-      "arn:aws:iam::${data.aws_caller_identity.current.account_id}:policy/aws-dev-foundation-eks-pod-identity",
-      "arn:aws:iam::${data.aws_caller_identity.current.account_id}:policy/aws-dev-foundation-ecr",
-    ]
+    resources = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:policy/aws-dev-foundation-*"]
   }
 
   statement {
@@ -604,10 +611,7 @@ data "aws_iam_policy_document" "aws_dev_foundation_managed_policies" {
     actions = [
       "iam:GetPolicy", "iam:GetPolicyVersion", "iam:ListPolicyVersions", "iam:ListPolicyTags",
     ]
-    resources = [
-      "arn:aws:iam::${data.aws_caller_identity.current.account_id}:policy/aws-dev-foundation-eks-pod-identity",
-      "arn:aws:iam::${data.aws_caller_identity.current.account_id}:policy/aws-dev-foundation-ecr",
-    ]
+    resources = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:policy/aws-dev-foundation-*"]
   }
 }
 
