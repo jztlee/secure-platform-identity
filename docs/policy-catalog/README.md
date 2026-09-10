@@ -110,11 +110,85 @@ does *not* force an immediate rescan, it just resets that timer. Existing
 can lag behind a policy change by up to that interval even though the
 live policy is already correctly enforcing — don't mistake a stale report
 for a broken exclusion; check the live `ClusterPolicy` object
-(`kubectl get clusterpolicy <name> -o yaml`) instead.
+(`kubectl get clusterpolicy <name> -o yaml`) instead. If you need a fresh
+result *now* rather than waiting: deleting the specific stale
+`PolicyReport` object (`kubectl delete policyreport <name> -n <ns>`) forces
+Kyverno to regenerate it immediately — more reliable than restarting the
+controllers, which was observed to *not* force an immediate rescan of
+already-failing reports even though it clearly restarted the pods.
+
+### `pod-security-restricted-host-controls`
+
+**File:** [`kubernetes/policies/kyverno/pod-security-restricted-host-controls.yaml`](../../kubernetes/policies/kyverno/pod-security-restricted-host-controls.yaml)
+
+**What's denied:** The remaining official Kubernetes Pod Security
+Standards (restricted) controls not covered by `pod-security-restricted`:
+(1) host namespaces (`hostNetwork`/`hostPID`/`hostIPC`), (2) `hostPath`
+volumes, (3) `hostPort` on any container port, and (4) missing
+`seccompProfile` (must be `RuntimeDefault` or `Localhost`).
+`validationFailureAction: Enforce`.
+
+**Why a separate policy, not more rules on `pod-security-restricted`:**
+`validationFailureAction` is set at the policy level in Kyverno, not
+per-rule. Adding new, unaudited rules to a policy already in `Enforce`
+would put them live with zero audit period — exactly the risk the
+Audit-first rollout process exists to avoid. Each new batch of PSS
+controls gets its own policy so it can go through the same
+Audit → fix → Enforce lifecycle independently.
+
+**Scope:** `kube-system` excluded on all four rules, same reasoning as
+`pod-security-restricted`. `node-exporter` (in `monitoring`, matched by a
+`*node-exporter*` name pattern) is additionally excluded from
+`disallow-host-namespaces`, `disallow-host-path`, and `disallow-host-ports`
+specifically — it inherently needs `hostNetwork`/`hostPID` and
+`hostPath` mounts (`/proc`, `/sys`, `/`) to read node-level metrics, and
+because of `hostNetwork`, Kubernetes' own API server automatically
+defaults `hostPort` to match `containerPort` on every container port
+regardless of whether it's set explicitly — so a real `hostPort` value is
+an unavoidable *consequence* of the `hostNetwork` requirement, not a
+separate thing to fix. It is **not** exempted from `restrict-seccomp`,
+since seccomp filtering doesn't conflict with host-metrics collection —
+that one was fixed via Helm values instead (see below).
+
+**Two real bugs caught during rollout, not just fixable violations:**
+1. `disallow-host-ports` originally used the `X(hostPort): "null"` anchor
+   (correct for `disallow-host-path`'s "must not exist" semantics, verified
+   against Kyverno's own official policy), but incorrectly flagged
+   `node-exporter`'s container even when `hostPort` was completely absent
+   from the manifest. The correct anchor for "must be unset **or** zero" is
+   `=(hostPort): 0` — a conditional anchor with an explicit expected value,
+   not an existence anchor. Confirmed against Kyverno's official
+   `disallow-host-ports` policy before fixing.
+2. Fixing the pattern alone still left `node-exporter` failing, because the
+   *live* `hostPort` value turned out to be `9100` (matching
+   `containerPort`), not absent — the API server's `hostNetwork` defaulting
+   behavior described above. This needed the exemption, not another
+   pattern fix.
+
+**Fixed via Helm values (not exempted):** `kube-prometheus-stack`'s
+`node-exporter` (missing `seccompProfile`), the OTel Collector (missing
+`seccompProfile`), and the `opa` sidecar in
+`kubernetes/base/platform-api/opa-deployment.yaml` (missing
+`seccompProfile`) — all three now set `seccompProfile.type: RuntimeDefault`
+explicitly.
+
+**How it's tested:**
+1. Background-scan `PolicyReport`s confirmed every non-excluded workload
+   passes all four rules after the fixes above.
+2. Two isolated negative tests, since a single under-specified test pod
+   gets caught by `pod-security-restricted` first and doesn't prove
+   anything about *this* policy specifically: a pod satisfying every rule
+   from the first policy but setting `hostNetwork: true` was rejected,
+   correctly citing `disallow-host-namespaces` from this policy by name.
 
 **Still needed for Phase 5** (spec §8's full "enforced everywhere" list):
-the remaining Pod Security Standards rules (host namespaces, hostPath,
-hostPort, seccomp, restricted volume types), default-deny NetworkPolicies,
-namespace ownership labels + quotas, and least-privilege RBAC (no wildcard
-verbs/resources, no stray `cluster-admin` bindings outside
-`break-glass-admin`).
+default-deny NetworkPolicies (flagged as the highest-risk remaining item —
+could break Prometheus scraping, Argo CD↔API-server traffic, or Kyverno's
+own webhooks if not allowlisted correctly first), read-only root
+filesystem, explicit resource requests/limits enforcement, immutable
+digests / no mutable tags as an admission rule (not just signature
+verification), namespace ownership labels + quotas, least-privilege RBAC
+audit (no wildcard verbs/resources, no stray `cluster-admin` bindings
+outside `break-glass-admin`), and documenting the CloudWatch audit log
+retention period (control-plane logging itself was already enabled in an
+earlier phase).
