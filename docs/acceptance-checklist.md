@@ -13,7 +13,7 @@ not just that a `.rego` file exists).
 - [ ] OPA policies are tested and correctly deny an unauthorized action.
 - [ ] A workload retrieves a permitted secret via its own identity; an unauthorized workload is denied.
 - [x] CI scans source, dependencies, Terraform, and images before publish.
-- [ ] GitOps deploys the signed image to the cluster by digest.
+- [x] GitOps deploys the signed image to the cluster by digest.
 - [ ] Grafana shows service/cluster health; a controlled failure fires an alert.
 - [ ] A recorded recovery exercise demonstrates restart, rollback, and backup restore.
 - [ ] The Azure ADR maps every AWS control to a named Azure equivalent, with stub modules matching the interface.
@@ -111,8 +111,13 @@ not just that a `.rego` file exists).
   would break). The honest gap this leaves: no CPU limit on these
   components means a bug or compromise in any of them could consume more
   of a node's resources than intended — a real noisy-neighbor risk on a
-  3-node cluster, not a theoretical one. Revisit before calling this
-  project interview-ready, ideally via a namespace-label-based scope
-  (`namespaceSelector` on a `workload-tier` label) rather than a hardcoded
-  namespace name, so extending coverage later doesn't require editing the
-  policy itself each time.
+  3-node cluster, not a theoretical one.
+
+  **Resolved as a documented decision, not left open:** see
+  [ADR-0002](adr/ADR-0002-scope-resource-limits-to-owned-workloads.md).
+  Attempting to enforce this cluster-wide via `ResourceQuota` reproduced
+  the predicted breakage live (`external-secrets`' rollout got stuck on
+  `FailedCreate`) — confirming the estimate above rather than requiring
+  new investigation. Accepted as a permanent scope decision for
+  third-party charts, revisited only if a specific incident shows the gap
+  matters in practice.
