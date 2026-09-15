@@ -283,6 +283,96 @@ correctly adopted the existing log group and its accumulated history in
 place — the apply was `0 added, 1 changed, 0 destroyed`, not a
 destroy-and-recreate that would have lost the existing audit trail.
 
+### `default-deny-ingress` + `allow-dns`, extended to `argocd`, `monitoring`, `observability` (Phase 5, continued)
+
+**Files:** [`kubernetes/network-policies/`](../../kubernetes/network-policies/) — one file per namespace, synced via a dedicated `network-policies` Argo CD Application (`kubernetes/argocd/apps/network-policies.yaml`), since these are Helm-chart-managed namespaces without a raw-manifest home of their own.
+
+**A real incident, not a config task:** applying `default-deny-ingress`
+broke DNS resolution for pods in the affected namespace — lookups took
+~40s (timeout/retry) instead of <1s. Confirmed by controlled A/B test:
+identical `nslookup github.com` from a pod with the policy vs. one
+without, isolating the variable. CoreDNS itself was healthy; the network
+path between an ingress-restricted pod and CoreDNS's reply was the actual
+problem. Root cause, empirically: this cluster's `NetworkPolicy`
+enforcement does not reliably treat a UDP DNS reply as return traffic for
+a connection the pod itself initiated — theoretically it should be
+allowed automatically via connection tracking regardless of ingress
+policy, but in practice it wasn't. **Fix:** an explicit `allow-dns`
+**ingress** rule (not egress — egress was never restricted by any policy
+here) permitting traffic from `kube-system` on UDP/TCP port 53.
+
+**Blast radius this had:** `argocd-repo-server` depends on DNS for every
+GitHub fetch. The 40s delay caused it to fail its own liveness probe
+repeatedly (`CrashLoopBackOff`), which cascaded into every Argo CD
+Application showing `Unknown` sync status cluster-wide — not just the
+namespace the policy was applied to. Fixed by adding `allow-dns` to
+`argocd`, then confirmed necessary (and pre-emptively fixed) in
+`monitoring`, `observability`, and retroactively `platform-api`, which
+had carried this same latent bug since Phase 5's very first rollout
+without anyone noticing, since nothing there does frequent external DNS
+lookups the way Argo CD does.
+
+**`argocd` does *not* get `allow-intra-namespace`, unlike the other three
+— a deliberate exception, not an inconsistency.** The Argo CD Helm chart
+ships its own fine-grained, component-scoped `NetworkPolicy` objects
+(e.g. only `argocd-server` and `argocd-repo-server` may reach
+`argocd-redis`). Since `NetworkPolicy` ingress rules are additive across
+every policy selecting a pod — never subtractive — a blanket
+`allow-intra-namespace` (`from: podSelector: {}`) would have made those
+chart-shipped rules moot: any pod in the namespace would be able to reach
+any other, silently erasing the lateral-movement protection the chart
+ships by default. `monitoring` and `observability` have no equivalent
+chart-shipped segmentation to protect, so the broad allow costs nothing
+there.
+
+### `default-deny-ingress` + `allow-dns` + `allow-control-plane-webhook`, extended to `cert-manager`, `external-secrets`, `kyverno`
+
+**Files:** same `kubernetes/network-policies/` directory as above.
+
+**Why these three needed a third rule the others didn't:** each runs a
+validating/mutating admission webhook the EKS control plane calls
+directly — traffic that originates from AWS's managed control plane, not
+from another cluster pod, so `podSelector`/`namespaceSelector` can't match
+it. Confirmed via `kubectl get validatingwebhookconfigurations,mutatingwebhookconfigurations`
+that nearly every webhook on these three components sets
+`failurePolicy: Fail` — meaning a misconfigured policy here doesn't just
+break one namespace, it makes the API server refuse admission of whatever
+resource kind that webhook governs, cluster-wide, until fixed. Higher
+blast radius than the DNS incident above, treated accordingly (verified
+immediately after merge with a live create/delete `configmap` canary, not
+assumed safe from the manifest alone).
+
+**The `ipBlock` CIDR problem, and how it's actually scoped:** this
+cluster (`endpoint_private_access = true`) places the EKS control plane's
+own ENIs inside the same private subnets (`10.0.10.0/24`, `10.0.11.0/24`)
+used by every node and pod, since the AWS VPC CNI assigns pod IPs directly
+from the VPC subnet range rather than a separate overlay pod-network.
+There is no CIDR that means "the control plane and nothing else" on this
+cluster — an `ipBlock` on these subnets is necessarily broader than the
+control plane alone. The mitigation is scoping everything else as tightly
+as possible: `podSelector` targets only the specific webhook-serving pod
+(reusing the exact selector each webhook's own `Service` already uses,
+not a namespace-wide `{}`), and `ports` names only the webhook's specific
+port. The result is much narrower than a namespace-wide allow, even
+though the source CIDR itself is wide.
+
+**Deliberately not done: `aws-load-balancer-controller`.** Its webhook
+pods run in `kube-system`, not a dedicated namespace — `kube-system` also
+hosts CoreDNS, kube-proxy, and the VPC CNI itself, so a namespace-wide
+`default-deny-ingress` there carries a materially different (and higher)
+risk than anywhere else this pattern was applied. Would need a
+`podSelector`-only policy scoped just to the LB controller's own pods,
+with no namespace-wide deny — evaluated and explicitly deferred, not an
+oversight (see [ADR list](../adr/README.md) discussion; no formal ADR
+written since the decision was "do nothing yet," not "accept a specific
+tradeoff").
+
+**How it's tested:** `kubectl get applications -n argocd` and
+`kubectl get pods -A | grep -v Running` immediately after each merge
+(confirms nothing broke cluster-wide), plus a create/delete `configmap`
+canary specifically for the webhook-namespace change, to exercise the
+admission path end-to-end rather than just check pod health.
+
 ### `require-resource-hardening`
 
 **File:** [`kubernetes/policies/kyverno/require-resource-hardening.yaml`](../../kubernetes/policies/kyverno/require-resource-hardening.yaml)
@@ -310,6 +400,24 @@ a secondary security payoff compared to what's already enforced on those
 same components. `match` targets the `platform-api` namespace directly
 rather than excluding everything else — cleaner than maintaining a
 growing exclude-list as more namespaces get added to the cluster.
+
+**Update:** this prediction was tested for real, not just estimated.
+Adding cluster/CPU/memory-dimensioned `ResourceQuota` objects (not
+Kyverno — a separate, native enforcement mechanism, same underlying
+problem) to `argocd`, `monitoring`, `cert-manager`, and `external-secrets`
+reproduced exactly this failure mode live: every container in these
+namespaces has `resources: {}` (confirmed via
+`kubectl get pods -o=jsonpath='{...resources}'`), and Kubernetes rejects
+*any new* pod in a namespace whose quota constrains a resource dimension
+unless that pod declares it — `external-secrets`' own rollout got stuck
+mid-restart, `FailedCreate` on every replica, until the offending quota
+dimensions were removed. The decision to leave this scoped to
+`platform-api` only is now formalized in
+[ADR-0002](../adr/ADR-0002-scope-resource-limits-to-owned-workloads.md)
+rather than left as an open "revisit before interview-ready" item — it's
+an accepted, documented tradeoff, not a forgotten gap. The other four
+namespaces keep pod-*count*-only `ResourceQuota` objects
+(`kubernetes/resource-quotas/`) as a partial mitigation.
 
 **How it's tested:**
 1. Background-scan `PolicyReport`s confirmed `platform-api` and `opa`

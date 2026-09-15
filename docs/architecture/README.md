@@ -84,3 +84,31 @@ The SCP is the only control in this list that an admin IAM credential
 inside `dev` cannot override — everything else could theoretically be
 disabled by a sufficiently-privileged (or compromised) IAM principal within
 the account; the SCP is the backstop that survives that.
+
+## Kubernetes platform (Phase 4-8)
+
+```
+EKS cluster (dev, private nodes, endpoint_private_access + endpoint_public_access)
+├── kube-system — CoreDNS, kube-proxy, aws-node (VPC CNI), aws-load-balancer-controller, eks-pod-identity-agent
+├── argocd — GitOps control plane (app-of-apps, see docs/cicd/README.md)
+├── kyverno — admission policy engine (see docs/policy-catalog/README.md)
+├── cert-manager, external-secrets — platform services
+├── monitoring, observability — kube-prometheus-stack, OTel Collector
+└── platform-api — the Go API + OPA sidecar this project builds
+```
+
+**GitOps boundary:** every namespace above except `kube-system` is
+Argo CD-managed (`kubectl get applications -n argocd`). `kube-system`'s
+own components (CoreDNS, kube-proxy, VPC CNI) are EKS-managed add-ons via
+Terraform (`aws_eks_addon`), not Argo CD — a different, lower layer.
+
+**NetworkPolicy topology:** `default-deny-ingress` is applied to every
+namespace this project owns except `kube-system` (too broad a blast
+radius — CoreDNS and the CNI itself live there). Each namespace pairs it
+with narrow, explicit exceptions rather than one broad allow rule — see
+the policy catalog for the full reasoning, including a real DNS-breakage
+incident this surfaced and a control-plane-webhook exception pattern for
+namespaces running admission webhooks (`cert-manager`, `external-secrets`,
+`kyverno`). `aws-load-balancer-controller` is the one deliberately
+un-hardened component — it lives in `kube-system`, so the same
+namespace-wide pattern doesn't apply there safely.
