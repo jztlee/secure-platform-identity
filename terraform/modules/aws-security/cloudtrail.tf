@@ -6,6 +6,7 @@ locals {
 
 resource "aws_s3_bucket" "cloudtrail" {
   bucket = local.cloudtrail_bucket_name
+  force_destroy = true
 
   tags = {
     Name           = local.cloudtrail_bucket_name

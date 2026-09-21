@@ -4,6 +4,7 @@ locals {
 
 resource "aws_s3_bucket" "config" {
   bucket = local.config_bucket_name
+  force_destroy = true
 
   tags = {
     Name           = local.config_bucket_name
