@@ -121,3 +121,21 @@ not just that a `.rego` file exists).
   new investigation. Accepted as a permanent scope decision for
   third-party charts, revisited only if a specific incident shows the gap
   matters in practice.
+
+- **The Kyverno Helm chart is deployed with `crds.install: false`, and its
+  two largest CRDs (`clusterpolicies.kyverno.io`, `policies.kyverno.io`)
+  are installed manually via `kubectl apply --server-side`, outside
+  Argo CD entirely.** Discovered during Phase 5: those CRDs' rendered size
+  exceeds Kubernetes' 262144-byte `metadata.annotations` limit, and every
+  Argo CD apply/diff strategy tried — `ServerSideApply=true`,
+  `Replace=true`, and the `ServerSideDiff=true` compare-option
+  specifically documented by Kyverno's own Argo CD install guide — hit the
+  identical error. Not a config mistake; genuine tooling limitation this
+  chart version runs into under GitOps. The real risk this creates: it's a
+  manual, out-of-band step with no CI/CD or Terraform record, so it will
+  silently need repeating (and re-discovering, without the runbook) after
+  any full environment rebuild. Mitigated, not eliminated, by
+  [`docs/runbooks/teardown-and-rebuild.md`](runbooks/teardown-and-rebuild.md),
+  which captures the exact command. Revisit once Kyverno's chart adopts a
+  smaller CRD representation or Argo CD gains a strategy that actually
+  handles this case, and drop the manual step.
